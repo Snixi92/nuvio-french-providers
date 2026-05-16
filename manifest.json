@@ -1,73 +1,15 @@
 {
-  "name": "French Streaming Providers",
+  "id": "com.snixi92.french-providers",
   "version": "1.0.0",
-  "scrapers": [
-    {
-      "id": "nakios",
-      "name": "Nakios",
-      "description": "Films et séries en VF, VOSTFR et MULTI. Qualité 4K disponible.",
-      "version": "4.1.0",
-      "author": "wooodyhood",
-      "supportedTypes": ["movie", "tv"],
-      "filename": "providers/nakios.js",
-      "enabled": true,
-      "formats": ["mp4", "m3u8"],
-      "logo": "https://i.postimg.cc/nLwY1pJB/nakios.png",
-      "contentLanguage": ["fr", "en"]
-    },
-    {
-      "id": "purstream",
-      "name": "Purstream",
-      "description": "Films et séries en VF, VOSTFR et MULTI depuis purstream.",
-      "version": "4.1.0",
-      "author": "wooodyhood",
-      "supportedTypes": ["movie", "tv"],
-      "filename": "providers/purstream.js",
-      "enabled": true,
-      "formats": ["mp4", "m3u8"],
-      "logo": "https://i.postimg.cc/7L5shxmC/purstream.png",
-      "contentLanguage": ["fr", "en"]
-    },
-    {
-      "id": "movix",
-      "name": "Movix",
-      "description": "Films et séries en VF et VOSTFR via Movix.",
-      "version": "1.0.22",
-      "author": "Gowaru",
-      "supportedTypes": ["movie", "tv"],
-      "filename": "providers/movix.js",
-      "enabled": true,
-      "formats": ["mp4", "mkv", "m3u8"],
-      "logo": "https://movix.cash/movix.png",
-      "contentLanguage": ["fr"],
-      "supportsExternalPlayer": true
-    },
-    {
-      "id": "toflix",
-      "name": "ToFlix",
-      "description": "Films et séries en VF français via ToFlix.",
-      "version": "1.0.0",
-      "author": "wooodyhood",
-      "supportedTypes": ["movie", "tv"],
-      "filename": "providers/toflix.js",
-      "enabled": true,
-      "formats": ["mp4", "m3u8"],
-      "logo": "https://i.postimg.cc/yNxJYqkv/toflix.png",
-      "contentLanguage": ["fr", "en"]
-    },
-    {
-      "id": "frenchstream",
-      "name": "Frenchstream",
-      "description": "Films et séries en VF et VOSTFR via l'API de Frenchstream.",
-      "version": "1.0.9",
-      "author": "Gowaru",
-      "supportedTypes": ["movie", "tv"],
-      "filename": "providers/frenchstream.js",
-      "enabled": true,
-      "formats": ["mp4", "mkv", "m3u8"],
-      "logo": "https://fs03.lol/favicon.ico",
-      "contentLanguage": ["fr"],
-      "supportsExternalPlayer": true
-    }
-  ]
+  "name": "French Streaming Providers",
+  "description": "Nakios, Purstream, Movix, ToFlix, Frenchstream — Films & séries en VF, VOSTFR, MULTI",
+  "logo": "https://i.postimg.cc/nLwY1pJB/nakios.png",
+  "resources": ["stream"],
+  "types": ["movie", "series"],
+  "idPrefixes": ["tt", "tmdb:"],
+  "catalogs": [],
+  "behaviorHints": {
+    "configurable": false,
+    "newEpisodeNotifications": false
+  }
 }
