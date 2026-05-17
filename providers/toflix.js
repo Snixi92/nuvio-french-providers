@@ -2,7 +2,7 @@
 // Provider Nuvio : ToFlix (VF français)
 // =============================================================
 
-var DOMAINS_URL    = 'https://raw.githubusercontent.com/wooodyhood/nuvio-repo/main/domains.json';
+var DOMAINS_URL    = 'https://raw.githubusercontent.com/Snixi92/nuvio-french-providers/main/domains.json';
 var TOFLIX_FALLBACK = 'sbs';
 var TOFLIX_API     = 'https://api.toflix.' + TOFLIX_FALLBACK + '/toflix_api.php';
 var TOFLIX_REFERER = 'https://toflix.' + TOFLIX_FALLBACK + '/';
