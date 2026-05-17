@@ -1,6 +1,6 @@
 # 🇫🇷 French Streaming Providers — Nuvio Addon
 
-Addon Stremio pour Nuvio avec 5 providers français : **Nakios, Purstream, Movix, ToFlix, Frenchstream**.
+Addon Stremio pour Nuvio avec 7 providers français : **Nakios, Purstream, Movix, ToFlix, Frenchstream, Nakastream, Vstream**.
 
 Films & séries en **VF, VOSTFR, MULTI**.
 
@@ -13,10 +13,10 @@ Films & séries en **VF, VOSTFR, MULTI**.
 3. Colle cette URL :
 
 ```
-https://1390a5ce-b71b-4588-92c0-194c4ab8a3f5-00-8t5kguuznezs.spock.replit.dev/api/stremio/manifest.json
+https://nuvio-french-providers.onrender.com/manifest.json
 ```
 
-4. Confirme — les 5 providers apparaissent immédiatement
+4. Confirme — les 7 providers apparaissent immédiatement
 
 ---
 
@@ -39,10 +39,12 @@ https://raw.githubusercontent.com/Snixi92/nuvio-french-providers/main/manifest.j
 | Movix | ✅ | ✅ | 1080p, 720p |
 | ToFlix | ✅ | ✅ | HD |
 | Frenchstream | ✅ | ✅ | HD |
+| Nakastream | ✅ | ✅ | 1080p, 720p |
+| Vstream | ✅ | ✅ | HD |
 
 ---
 
 ## ⚙️ Architecture
 
-- **Addon Stremio** (NuvioTV/NuvioWeb) : serveur hébergé sur Replit, convertit les IDs IMDB → TMDB et interroge les 5 providers en parallèle
+- **Addon Stremio** (NuvioTV/NuvioWeb) : serveur hébergé sur Render, convertit les IDs IMDB → TMDB et interroge les 7 providers en parallèle
 - **Plugin QuickJS** (NuvioMobile) : les fichiers `providers/*.js` s'exécutent directement sur l'appareil
