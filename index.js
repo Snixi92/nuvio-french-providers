@@ -165,7 +165,7 @@ const express = require('express');
   // ─── Dashboard ────────────────────────────────────────────────────────────────
   app.get('/dashboard', (req, res) => res.sendFile(path.join(__dirname, 'dashboard.html')));
 
-  app.get('/api/dashboard/status', dashboardAuth, (req, res) => {
+  app.get('/api/dashboard/status', (req, res) => {
     const status = {};
     for (const name of Object.keys(providers))
       status[name] = { enabled: config.providers[name]?.enabled !== false };
@@ -174,7 +174,7 @@ const express = require('express');
     res.json({ providers: status, hasGithub: !!GITHUB_TOKEN, passwordRequired: !!DASHBOARD_PASSWORD });
   });
 
-  app.post('/api/dashboard/toggle/:name', dashboardAuth, async (req, res) => {
+  app.post('/api/dashboard/toggle/:name', async (req, res) => {
     const { name } = req.params;
     if (!providers[name] && !config.providers[name]) return res.status(404).json({ error: 'Provider introuvable' });
     if (!config.providers[name]) config.providers[name] = {};
@@ -184,7 +184,7 @@ const express = require('express');
     saveConfig().catch(e => console.error('[Config]', e.message));
   });
 
-  app.post('/api/dashboard/provider/add', dashboardAuth, async (req, res) => {
+  app.post('/api/dashboard/provider/add', async (req, res) => {
     const { url, name } = req.body;
     if (!url) return res.status(400).json({ error: 'URL requise' });
     if (!GITHUB_TOKEN) return res.status(500).json({ error: 'GITHUB_TOKEN non configuré' });
