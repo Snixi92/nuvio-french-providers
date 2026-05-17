@@ -1,7 +1,9 @@
 // =============================================================
 // Provider Nuvio : Purstream.ac (VF/VOSTFR/MULTI)
-// Version : 5.0.0 — Fix série + épisode via sheet endpoint
+// Version : 5.1.0 — https module pour bypass Cloudflare bot-detection
 // =============================================================
+
+var https = require('https');
 
 var DOMAINS_URL = 'https://raw.githubusercontent.com/Snixi92/nuvio-french-providers/main/domains.json';
 var PURSTREAM_FALLBACK = 'ac';
@@ -11,6 +13,39 @@ var PURSTREAM_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36
 var TMDB_KEY = 'f3d757824f08ea2cff45eb8f47ca3a1e';
 
 var _cachedEndpoint = null;
+
+// ── Helper : requête HTTPS via le module natif (HTTP/1.1, bypass Cloudflare) ──
+function httpsGetJson(url, extraHeaders) {
+  return new Promise(function(resolve, reject) {
+    var u;
+    try { u = new URL(url); } catch(e) { return reject(new Error('Invalid URL: ' + url)); }
+    var options = {
+      hostname: u.hostname,
+      path: u.pathname + (u.search || ''),
+      method: 'GET',
+      headers: Object.assign({
+        'User-Agent': PURSTREAM_UA,
+        'Referer': PURSTREAM_REFERER,
+        'Accept': 'application/json',
+        'Accept-Language': 'fr-FR,fr;q=0.9,en-US;q=0.8',
+        'Connection': 'keep-alive',
+        'Host': u.hostname
+      }, extraHeaders || {})
+    };
+    var req = https.request(options, function(res) {
+      var chunks = [];
+      res.on('data', function(c) { chunks.push(c); });
+      res.on('end', function() {
+        var body = Buffer.concat(chunks).toString('utf8');
+        try { resolve(JSON.parse(body)); }
+        catch(e) { reject(new Error('JSON parse error: ' + body.slice(0, 80))); }
+      });
+    });
+    req.on('error', reject);
+    req.setTimeout(15000, function() { req.destroy(new Error('timeout')); });
+    req.end();
+  });
+}
 
 function getTmdbDetails(tmdbId, type) {
   var url = 'https://api.themoviedb.org/3/' + (type === 'tv' ? 'tv' : 'movie') + '/' + tmdbId + '?api_key=' + TMDB_KEY + '&language=en-US';
@@ -94,13 +129,10 @@ function getTmdbSearchMeta(tmdbId, mediaType) {
 
 function findPurstreamIdByTitle(title, mediaType, tmdbYear) {
   var encoded = encodeURIComponent(title);
-  return fetch(PURSTREAM_API + '/search-bar/search/' + encoded, {
-    headers: { 'User-Agent': PURSTREAM_UA, 'Referer': PURSTREAM_REFERER, 'Accept': 'application/json' }
-  })
-    .then(function(res) { return res.json(); })
+  return httpsGetJson(PURSTREAM_API + '/search-bar/search/' + encoded)
     .then(function(data) {
       var items = data.data && data.data.items && data.data.items.movies && data.data.items.movies.items ? data.data.items.movies.items : [];
-      if (items.length === 0) throw new Error('Not found');
+      if (items.length === 0) throw new Error('Not found: ' + title);
       var cleanTarget = cleanTitle(title);
       var match = items.find(function(item) {
         var purYear = extractYear(item.release_date);
@@ -110,29 +142,19 @@ function findPurstreamIdByTitle(title, mediaType, tmdbYear) {
     });
 }
 
-// ─── SHEET ENDPOINT (fonctionne pour films ET séries) ─────────────────────
-// Retourne data.data.items.urls — tableau de {url, name}
-// Pour les séries, l'URL contient /S{season}/E{episode}/ dans le chemin
 function fetchSheet(purstreamId) {
-  return fetch(PURSTREAM_API + '/media/' + purstreamId + '/sheet', {
-    headers: { 'User-Agent': PURSTREAM_UA, 'Referer': PURSTREAM_REFERER, 'Accept': 'application/json' }
-  })
-    .then(function(res) { return res.json(); })
+  return httpsGetJson(PURSTREAM_API + '/media/' + purstreamId + '/sheet')
     .then(function(data) {
       if (!data.data || !data.data.items) return [];
       return data.data.items.urls || [];
     });
 }
 
-// Filtre les URLs d'un sheet de série pour ne garder que le bon épisode
-// Les URLs ressemblent à : .../tv/{tmdbId}/S1/E1/free-xxx/master.m3u8
 function filterEpisodeUrls(urls, season, episode) {
   var s = parseInt(season, 10) || 1;
   var e = parseInt(episode, 10) || 1;
-  // Pattern: /S{n}/E{n}/ (insensible à la casse)
   var pattern = new RegExp('/S' + s + '/E' + e + '/', 'i');
   var filtered = urls.filter(function(item) { return item.url && pattern.test(item.url); });
-  // Fallback : si le pattern S/E est absent dans l'URL, on retourne tout (edge case)
   return filtered.length > 0 ? filtered : [];
 }
 
@@ -151,10 +173,8 @@ function parseQuality(name, url) {
   if (n.indexOf('1080') !== -1) return '1080p';
   if (n.indexOf('720') !== -1) return '720p';
   if (n.indexOf('480') !== -1) return '480p';
-  // Fallback: check URL for quality hints
   if (u.indexOf('1080') !== -1) return '1080p';
   if (u.indexOf('720') !== -1) return '720p';
-  // premium = 1080p, free = 720p (convention purstream.ac)
   if (n.indexOf('PREMIUM') !== -1 || u.indexOf('premium') !== -1) return '1080p';
   if (n.indexOf('FREE') !== -1 || u.indexOf('free') !== -1) return '720p';
   return 'HD';
@@ -194,10 +214,8 @@ function getStreams(tmdbId, mediaType, season, episode) {
     return findPurstreamIdByTitle(search.fr, mediaType, search.year)
       .catch(function() { return findPurstreamIdByTitle(search.orig, mediaType, search.year); })
       .then(function(purstreamId) {
-        // Même endpoint pour films et séries : /media/{id}/sheet
         return fetchSheet(purstreamId).then(function(urls) {
           if (mediaType === 'tv') {
-            // Filtrer les URLs pour le bon épisode (ex: /S1/E3/ dans l'URL)
             var epUrls = filterEpisodeUrls(urls, season, episode);
             return normalizeUrls(epUrls, meta, season, episode, epInfo);
           } else {
@@ -206,14 +224,13 @@ function getStreams(tmdbId, mediaType, season, episode) {
         });
       });
   }).catch(function(e) {
-    var msg = e && (e.message || String(e)) || 'unknown error';
-    console.warn('[Purstream] getStreams error:', msg);
-    return [{ _debug: true, name: 'DEBUG:' + msg, title: msg, url: '', quality: '', format: '' }];
+    console.warn('[Purstream] getStreams error:', e && (e.message || String(e)));
+    return [];
   });
 }
 
 if (typeof module !== 'undefined' && module.exports) module.exports = { getStreams: getStreams };
 else {
   if (typeof globalThis !== 'undefined') globalThis.getStreams = getStreams;
-  if (typeof global !== -1 && typeof global !== 'undefined') global.getStreams = getStreams;
+  if (typeof global !== 'undefined') global.getStreams = getStreams;
 }
