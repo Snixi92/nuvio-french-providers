@@ -184,6 +184,42 @@ const express = require('express');
     saveConfig().catch(e => console.error('[Config]', e.message));
   });
 
+  // ─── Test provider (dashboard) ────────────────────────────────────────────
+  // Lance une recherche test sur un film populaire et renvoie les streams trouvés
+  const TEST_MOVIE_TMDB = '27205'; // Inception (tmdbId)
+  const TEST_TV_TMDB    = '1396';  // Breaking Bad
+
+  app.get('/api/dashboard/test/:name', async (req, res) => {
+    const { name } = req.params;
+    const provider = providers[name];
+    if (!provider) return res.status(404).json({ error: 'Provider introuvable ou non chargé' });
+
+    const mode = (req.query.mode === 'tv') ? 'tv' : 'movie';
+    const tmdbId = mode === 'tv' ? TEST_TV_TMDB : TEST_MOVIE_TMDB;
+    const season  = parseInt(req.query.season)  || 1;
+    const episode = parseInt(req.query.episode) || 1;
+    const testLabel = mode === 'tv'
+      ? `Breaking Bad S${season}E${episode} (TMDB ${tmdbId})`
+      : `Inception (TMDB ${tmdbId})`;
+
+    console.log(`[Test] ${name} → ${testLabel}`);
+    const t0 = Date.now();
+    try {
+      const streams = await withTimeout(
+        Promise.resolve().then(() => provider.getStreams(tmdbId, mode, season, episode)),
+        20000,
+        name
+      );
+      const elapsed = Date.now() - t0;
+      console.log(`[Test] ${name} → ${streams.length} stream(s) en ${elapsed}ms`);
+      res.json({ provider: name, test: testLabel, elapsed, count: streams.length, streams });
+    } catch (e) {
+      const elapsed = Date.now() - t0;
+      console.warn(`[Test] ${name} erreur (${elapsed}ms):`, e.message);
+      res.status(500).json({ provider: name, test: testLabel, elapsed, error: e.message, streams: [] });
+    }
+  });
+
   app.post('/api/dashboard/provider/add', async (req, res) => {
     const { url, name } = req.body;
     if (!url) return res.status(400).json({ error: 'URL requise' });
