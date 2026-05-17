@@ -1,13 +1,13 @@
 // =============================================================
-// Provider Nuvio : Purstream.art (VF/VOSTFR/MULTI)
-// Version : 4.1.0
+// Provider Nuvio : Purstream.ac (VF/VOSTFR/MULTI)
+// Version : 5.0.0 — Fix série + épisode via sheet endpoint
 // =============================================================
 
 var DOMAINS_URL = 'https://raw.githubusercontent.com/Snixi92/nuvio-french-providers/main/domains.json';
 var PURSTREAM_FALLBACK = 'ac';
 var PURSTREAM_API = 'https://api.purstream.' + PURSTREAM_FALLBACK + '/api/v1';
 var PURSTREAM_REFERER = 'https://purstream.' + PURSTREAM_FALLBACK + '/';
-var PURSTREAM_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+var PURSTREAM_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
 var TMDB_KEY = 'f3d757824f08ea2cff45eb8f47ca3a1e';
 
 var _cachedEndpoint = null;
@@ -41,7 +41,7 @@ function buildPurstreamTitle(meta, res, lang, format, season, episode, epInfo) {
   else if (check.indexOf('VOST') !== -1) { lIcon = '🔡'; displayLang = 'VOSTFR'; }
   var line1 = '🎬 ';
   if (season && episode) {
-    line1 += 'S' + season + ' E' + episode + (epInfo && epInfo.name ? ' - ' + epInfo.name : '') + ' | ' + meta.enName;
+    line1 += 'S' + String(season).padStart(2, '0') + ' E' + String(episode).padStart(2, '0') + (epInfo && epInfo.name ? ' - ' + epInfo.name : '') + ' | ' + meta.enName;
   } else {
     line1 += meta.enName + (meta.year ? ' - ' + meta.year : '');
   }
@@ -94,10 +94,12 @@ function getTmdbSearchMeta(tmdbId, mediaType) {
 
 function findPurstreamIdByTitle(title, mediaType, tmdbYear) {
   var encoded = encodeURIComponent(title);
-  return fetch(PURSTREAM_API + '/search-bar/search/' + encoded, { headers: { 'User-Agent': PURSTREAM_UA, 'Referer': PURSTREAM_REFERER } })
+  return fetch(PURSTREAM_API + '/search-bar/search/' + encoded, {
+    headers: { 'User-Agent': PURSTREAM_UA, 'Referer': PURSTREAM_REFERER, 'Accept': 'application/json' }
+  })
     .then(function(res) { return res.json(); })
     .then(function(data) {
-      var items = data.data.items.movies && data.data.items.movies.items ? data.data.items.movies.items : [];
+      var items = data.data && data.data.items && data.data.items.movies && data.data.items.movies.items ? data.data.items.movies.items : [];
       if (items.length === 0) throw new Error('Not found');
       var cleanTarget = cleanTitle(title);
       var match = items.find(function(item) {
@@ -108,58 +110,72 @@ function findPurstreamIdByTitle(title, mediaType, tmdbYear) {
     });
 }
 
-function fetchMovieSources(purstreamId) {
-  return fetch(PURSTREAM_API + '/media/' + purstreamId + '/sheet', { headers: { 'User-Agent': PURSTREAM_UA, 'Referer': PURSTREAM_REFERER } })
-    .then(function(res) { return res.json(); }).then(function(data) { return data.data.items.urls || []; });
+// ─── SHEET ENDPOINT (fonctionne pour films ET séries) ─────────────────────
+// Retourne data.data.items.urls — tableau de {url, name}
+// Pour les séries, l'URL contient /S{season}/E{episode}/ dans le chemin
+function fetchSheet(purstreamId) {
+  return fetch(PURSTREAM_API + '/media/' + purstreamId + '/sheet', {
+    headers: { 'User-Agent': PURSTREAM_UA, 'Referer': PURSTREAM_REFERER, 'Accept': 'application/json' }
+  })
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+      if (!data.data || !data.data.items) return [];
+      return data.data.items.urls || [];
+    });
 }
 
-function fetchEpisodeSources(purstreamId, season, episode) {
-  return fetch(PURSTREAM_API + '/stream/' + purstreamId + '/episode?season=' + (season || 1) + '&episode=' + (episode || 1), { headers: { 'User-Agent': PURSTREAM_UA, 'Referer': PURSTREAM_REFERER } })
-    .then(function(res) { return res.json(); }).then(function(data) { return data.data.items.sources || []; });
+// Filtre les URLs d'un sheet de série pour ne garder que le bon épisode
+// Les URLs ressemblent à : .../tv/{tmdbId}/S1/E1/free-xxx/master.m3u8
+function filterEpisodeUrls(urls, season, episode) {
+  var s = parseInt(season, 10) || 1;
+  var e = parseInt(episode, 10) || 1;
+  // Pattern: /S{n}/E{n}/ (insensible à la casse)
+  var pattern = new RegExp('/S' + s + '/E' + e + '/', 'i');
+  var filtered = urls.filter(function(item) { return item.url && pattern.test(item.url); });
+  // Fallback : si le pattern S/E est absent dans l'URL, on retourne tout (edge case)
+  return filtered.length > 0 ? filtered : [];
 }
 
 function parseLang(name) {
   var n = (name || '').toUpperCase();
   if (n.indexOf('VOSTFR') !== -1) return 'VOSTFR';
-  if (n.indexOf('VF') !== -1) return 'VF';
-  return 'MULTI';
+  if (n.indexOf('VF') !== -1 && n.indexOf('MULTI') === -1) return 'VF';
+  if (n.indexOf('MULTI') !== -1) return 'MULTI';
+  return 'VF';
 }
 
-function parseQuality(name) {
+function parseQuality(name, url) {
   var n = (name || '').toUpperCase();
-  if (n.indexOf('4K') !== -1) return '4K';
+  var u = (url || '').toLowerCase();
+  if (n.indexOf('4K') !== -1 || n.indexOf('2160') !== -1) return '4K';
   if (n.indexOf('1080') !== -1) return '1080p';
   if (n.indexOf('720') !== -1) return '720p';
+  if (n.indexOf('480') !== -1) return '480p';
+  // Fallback: check URL for quality hints
+  if (u.indexOf('1080') !== -1) return '1080p';
+  if (u.indexOf('720') !== -1) return '720p';
+  // premium = 1080p, free = 720p (convention purstream.ac)
+  if (n.indexOf('PREMIUM') !== -1 || u.indexOf('premium') !== -1) return '1080p';
+  if (n.indexOf('FREE') !== -1 || u.indexOf('free') !== -1) return '720p';
   return 'HD';
 }
 
-function normalizeMovieSources(urls, meta) {
-  return urls.filter(function(item) { return item.url && (item.url.match(/\.m3u8/i) || item.url.match(/\.mp4/i)); })
+function normalizeUrls(urls, meta, season, episode, epInfo) {
+  return urls
+    .filter(function(item) { return item.url && (item.url.match(/\.m3u8/i) || item.url.match(/\.mp4/i)); })
     .map(function(item) {
-      var q = parseQuality(item.name);
+      var q = parseQuality(item.name, item.url);
+      var lang = parseLang(item.name);
+      var fmt = item.url.match(/\.mp4/i) ? 'mp4' : 'm3u8';
       return {
-        name: 'Purstream - ' + q,
-        title: buildPurstreamTitle(meta, q, parseLang(item.name), item.url.match(/\.mp4/i) ? 'mp4' : 'm3u8', null, null, null),
+        name: 'Purstream - ' + q + ' ' + lang,
+        title: buildPurstreamTitle(meta, q, lang, fmt, season, episode, epInfo),
         url: item.url,
         quality: q,
-        format: item.url.match(/\.mp4/i) ? 'mp4' : 'm3u8',
+        format: fmt,
         headers: { 'User-Agent': PURSTREAM_UA, 'Referer': PURSTREAM_REFERER }
       };
     });
-}
-
-function normalizeEpisodeSources(sources, meta, season, episode, epInfo) {
-  return sources.map(function(item) {
-    var q = parseQuality(item.source_name);
-    return {
-      name: 'Purstream - ' + q,
-      title: buildPurstreamTitle(meta, q, parseLang(item.source_name), item.format || 'm3u8', season, episode, epInfo),
-      url: item.stream_url,
-      quality: q,
-      format: item.format || 'm3u8',
-      headers: { 'User-Agent': PURSTREAM_UA, 'Referer': PURSTREAM_REFERER }
-    };
-  });
 }
 
 function getStreams(tmdbId, mediaType, season, episode) {
@@ -174,24 +190,29 @@ function getStreams(tmdbId, mediaType, season, episode) {
     var endpoint = results[2];
     var search = results[3];
     applyPurstreamDomain(endpoint);
+
     return findPurstreamIdByTitle(search.fr, mediaType, search.year)
       .catch(function() { return findPurstreamIdByTitle(search.orig, mediaType, search.year); })
       .then(function(purstreamId) {
-        if (mediaType === 'tv') {
-          return fetchEpisodeSources(purstreamId, season, episode).then(function(s) {
-            return normalizeEpisodeSources(s, meta, season, episode, epInfo);
-          });
-        } else {
-          return fetchMovieSources(purstreamId).then(function(u) {
-            return normalizeMovieSources(u, meta);
-          });
-        }
+        // Même endpoint pour films et séries : /media/{id}/sheet
+        return fetchSheet(purstreamId).then(function(urls) {
+          if (mediaType === 'tv') {
+            // Filtrer les URLs pour le bon épisode (ex: /S1/E3/ dans l'URL)
+            var epUrls = filterEpisodeUrls(urls, season, episode);
+            return normalizeUrls(epUrls, meta, season, episode, epInfo);
+          } else {
+            return normalizeUrls(urls, meta, null, null, null);
+          }
+        });
       });
-  }).catch(function() { return []; });
+  }).catch(function(e) {
+    console.warn('[Purstream] getStreams error:', e.message || e);
+    return [];
+  });
 }
 
 if (typeof module !== 'undefined' && module.exports) module.exports = { getStreams: getStreams };
 else {
   if (typeof globalThis !== 'undefined') globalThis.getStreams = getStreams;
-  if (typeof global !== 'undefined') global.getStreams = getStreams;
+  if (typeof global !== -1 && typeof global !== 'undefined') global.getStreams = getStreams;
 }
