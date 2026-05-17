@@ -3,265 +3,325 @@
   <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Nuvio — Dashboard Providers</title>
+  <title>Nuvio — Dashboard</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
-  :root {
-    --bg:       #0b0e18;
-    --surface:  #131726;
-    --s2:       #1c2035;
-    --border:   #252a42;
-    --b2:       #2e3454;
-    --accent:   #7c6ff7;
-    --ag:       rgba(124,111,247,.18);
-    --green:    #34d399;
-    --red:      #f87171;
-    --yellow:   #fbbf24;
-    --text:     #e4eaf4;
-    --muted:    #7a8aaa;
-    --r:        14px;
+  :root{
+    --bg:#080b14;--surface:#0e1220;--s2:#141827;--s3:#1c2238;
+    --border:#222844;--b2:#2a3358;
+    --text:#e6ecf8;--muted:#6b7a9e;--muted2:#4a5578;
+    --accent:#6c63ff;--ag:rgba(108,99,255,.15);
+    --green:#22d3a5;--red:#f56565;--yellow:#f6ad55;
+    --r:16px;
   }
   *{box-sizing:border-box;margin:0;padding:0}
-  body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;min-height:100vh}
+  html,body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;min-height:100vh}
 
-  /* HEADER */
+  /* ── HEADER ───────────────────────────────────────────────── */
   header{
-    background:linear-gradient(135deg,#131726,#0f1220);
+    background:linear-gradient(180deg,rgba(14,18,32,.98),rgba(8,11,20,.96));
     border-bottom:1px solid var(--border);
-    padding:16px 28px;
+    padding:0 24px;height:64px;
     display:flex;align-items:center;gap:14px;
-    position:sticky;top:0;z-index:20;
+    position:sticky;top:0;z-index:30;
+    backdrop-filter:blur(12px);
   }
-  .logo-box{
-    width:38px;height:38px;border-radius:10px;flex-shrink:0;
-    background:linear-gradient(135deg,#7c6ff7,#5b4de0);
+  .logo{
+    width:36px;height:36px;border-radius:10px;flex-shrink:0;
+    background:linear-gradient(135deg,#6c63ff,#4e46e5);
     display:flex;align-items:center;justify-content:center;
-    box-shadow:0 0 14px rgba(124,111,247,.4);
+    box-shadow:0 0 20px rgba(108,99,255,.5);
   }
-  .logo-box svg{color:#fff}
-  header h1{font-size:17px;font-weight:700;letter-spacing:-.3px}
-  header p{font-size:12px;color:var(--muted);margin-top:2px}
-  .hbadge{
-    margin-left:auto;display:flex;align-items:center;gap:6px;
-    background:rgba(52,211,153,.1);border:1px solid rgba(52,211,153,.25);
-    color:var(--green);font-size:11px;font-weight:600;padding:4px 12px;border-radius:20px;
+  .logo svg{color:#fff}
+  .hinfo h1{font-size:16px;font-weight:700;letter-spacing:-.3px}
+  .hinfo p{font-size:11.5px;color:var(--muted);margin-top:1px}
+  .hpill{
+    margin-left:auto;display:flex;align-items:center;gap:7px;
+    padding:6px 14px;border-radius:99px;font-size:12px;font-weight:600;
+    border:1px solid; transition:all .3s;
   }
-  .hbadge .dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
-  .hbadge.offline{background:rgba(248,113,113,.1);border-color:rgba(248,113,113,.25);color:var(--red)}
-  .hbadge.offline .dot{background:var(--red);animation:none}
-  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+  .hpill.ok{background:rgba(34,211,165,.08);border-color:rgba(34,211,165,.3);color:var(--green)}
+  .hpill.ok .dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+  .hpill.err{background:rgba(245,101,101,.08);border-color:rgba(245,101,101,.3);color:var(--red)}
+  .hpill.err .dot{width:6px;height:6px;border-radius:50%;background:var(--red)}
+  .hpill.loading{background:rgba(108,99,255,.08);border-color:rgba(108,99,255,.3);color:var(--accent)}
+  .hpill.loading .dot{width:6px;height:6px;border-radius:50%;background:var(--accent);animation:pulse 1s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
 
-  main{max-width:860px;margin:0 auto;padding:28px 16px}
+  main{max-width:920px;margin:0 auto;padding:28px 16px 48px}
 
-  /* ADDON LINK BANNER */
-  .addon-banner{
+  /* ── ADDON LINK ───────────────────────────────────────────── */
+  .addon-bar{
+    display:flex;align-items:center;gap:12px;
     background:var(--surface);border:1px solid var(--b2);
-    border-radius:var(--r);padding:16px 20px;
-    display:flex;align-items:center;gap:12px;margin-bottom:24px;
-    flex-wrap:wrap;gap-y:10px;
+    border-radius:14px;padding:14px 18px;margin-bottom:22px;
+    flex-wrap:wrap;row-gap:10px;
   }
-  .addon-banner svg{color:var(--accent);flex-shrink:0}
-  .addon-banner .ab-label{font-size:12px;color:var(--muted);font-weight:500;white-space:nowrap}
-  .addon-url{
-    flex:1;min-width:0;
-    background:var(--s2);border:1px solid var(--border);
-    border-radius:8px;padding:8px 12px;
-    font-size:12px;color:var(--text);font-family:monospace;
+  .addon-bar .ab-left{display:flex;align-items:center;gap:10px;flex:1;min-width:0}
+  .ab-icon{
+    width:34px;height:34px;border-radius:9px;flex-shrink:0;
+    background:var(--ag);border:1px solid rgba(108,99,255,.35);
+    display:flex;align-items:center;justify-content:center;color:var(--accent)
+  }
+  .ab-label{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;margin-bottom:3px}
+  .ab-url{
+    font-size:12px;font-family:monospace;color:var(--text);
     overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
   }
   .btn-copy{
-    background:var(--accent);color:#fff;border:none;
-    padding:8px 16px;border-radius:8px;font-size:12px;font-weight:600;
-    cursor:pointer;white-space:nowrap;font-family:inherit;
-    display:flex;align-items:center;gap:6px;transition:opacity .2s;flex-shrink:0;
+    background:var(--accent);color:#fff;border:none;border-radius:10px;
+    padding:9px 18px;font-size:12.5px;font-weight:600;cursor:pointer;
+    font-family:inherit;display:flex;align-items:center;gap:6px;
+    transition:opacity .2s,transform .15s;white-space:nowrap;flex-shrink:0;
   }
-  .btn-copy:hover{opacity:.85}
+  .btn-copy:hover{opacity:.85;transform:translateY(-1px)}
+  .btn-copy:active{transform:translateY(0)}
 
-  /* STATS */
-  .stats{display:flex;gap:10px;margin-bottom:24px;flex-wrap:wrap}
+  /* ── STATS ────────────────────────────────────────────────── */
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:28px}
   .stat{
     background:var(--surface);border:1px solid var(--border);
-    border-radius:12px;padding:14px 18px;flex:1;min-width:110px;
+    border-radius:14px;padding:16px;
   }
-  .stat-v{font-size:22px;font-weight:700}
-  .stat-l{font-size:11px;color:var(--muted);margin-top:2px;font-weight:500}
-  .stat.accent .stat-v{color:var(--accent)}
+  .stat-num{font-size:24px;font-weight:800;letter-spacing:-.5px}
+  .stat-lbl{font-size:11px;color:var(--muted);margin-top:3px;font-weight:500}
+  .stat.accent .stat-num{color:var(--accent)}
+  .stat.green .stat-num{color:var(--green)}
 
-  /* SECTION */
-  .sec{display:flex;align-items:center;gap:10px;margin-bottom:14px;margin-top:4px}
-  .sec-title{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
-  .sec-line{flex:1;height:1px;background:var(--border)}
+  /* ── SECTION HEADER ───────────────────────────────────────── */
+  .sh{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+  .sh-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
+  .sh-line{flex:1;height:1px;background:var(--border)}
 
-  /* PROVIDER CARDS */
-  .grid{display:grid;gap:10px;margin-bottom:32px}
-  .card{
+  /* ── PROVIDER GRID ────────────────────────────────────────── */
+  .pgrid{display:grid;gap:10px;margin-bottom:32px}
+
+  /* ── PROVIDER CARD ────────────────────────────────────────── */
+  .pcard{
     background:var(--surface);border:1px solid var(--border);
-    border-radius:var(--r);padding:16px 18px;
-    display:flex;align-items:center;gap:14px;
-    transition:border-color .2s,box-shadow .2s;
+    border-radius:var(--r);padding:18px 20px;
+    display:flex;align-items:center;gap:16px;
     position:relative;overflow:hidden;
+    transition:border-color .25s,box-shadow .25s,opacity .25s;
   }
-  .card::before{
-    content:'';position:absolute;left:0;top:0;bottom:0;width:3px;
-    background:var(--border);transition:background .2s;
+  /* left accent stripe */
+  .pcard::before{
+    content:'';position:absolute;left:0;top:0;bottom:0;width:4px;
+    border-radius:4px 0 0 4px;
+    background:var(--border);transition:background .25s;
   }
-  .card.on::before{background:var(--green)}
-  .card.off{opacity:.55}
-  .card.warn::before{background:var(--yellow)}
-  .card:hover{border-color:var(--b2);box-shadow:0 4px 20px rgba(0,0,0,.3)}
-  .card.on:hover{border-color:var(--accent);box-shadow:0 4px 20px var(--ag)}
+  .pcard.on::before{background:var(--pcolor,var(--green))}
+  .pcard.on{box-shadow:0 0 0 1px var(--border),inset 0 0 40px rgba(0,0,0,.2)}
+  .pcard.on:hover{border-color:var(--pcolor,var(--accent));box-shadow:0 0 0 1px var(--pcolor,var(--accent)),0 6px 30px rgba(0,0,0,.35)}
+  .pcard.off{opacity:.48}
+  .pcard.off:hover{opacity:.65}
+  .pcard.pending::before{background:var(--yellow)}
+  .pcard.pending{opacity:.75}
 
-  /* PROVIDER LOGO */
-  .plogo{
-    width:46px;height:46px;border-radius:12px;
-    background:var(--s2);border:1px solid var(--b2);
+  /* ── PROVIDER LOGO ────────────────────────────────────────── */
+  .plogo-wrap{
+    width:52px;height:52px;border-radius:14px;flex-shrink:0;overflow:hidden;
+    border:1px solid var(--border);
+    background:var(--s2);
     display:flex;align-items:center;justify-content:center;
-    flex-shrink:0;font-size:13px;font-weight:700;color:var(--muted);
-    letter-spacing:-.5px;overflow:hidden;
+    position:relative;
   }
-  .plogo img{width:100%;height:100%;object-fit:contain;border-radius:10px}
+  .plogo-wrap img{
+    width:100%;height:100%;object-fit:contain;
+    border-radius:13px;display:block;
+  }
+  .plogo-letter{
+    width:100%;height:100%;display:flex;align-items:center;justify-content:center;
+    font-weight:800;font-size:17px;letter-spacing:-.5px;color:#fff;
+    border-radius:13px;
+    background:linear-gradient(135deg,var(--pcolor1,#444),var(--pcolor2,#222));
+  }
+  /* ON badge glow on logo */
+  .pcard.on .plogo-wrap{box-shadow:0 0 14px rgba(var(--pglow,108,99,255),.4)}
 
+  /* ── PROVIDER INFO ────────────────────────────────────────── */
   .pinfo{flex:1;min-width:0}
-  .pname{font-weight:600;font-size:15px;letter-spacing:-.2px}
-  .pdesc{font-size:12px;color:var(--muted);margin-top:2px}
-  .pbadge{
+  .pname{font-size:15.5px;font-weight:700;letter-spacing:-.3px;display:flex;align-items:center;gap:8px}
+  .pdesc{font-size:12px;color:var(--muted);margin-top:3px;line-height:1.5}
+  .pstatus{
     display:inline-flex;align-items:center;gap:5px;
-    font-size:11px;font-weight:500;margin-top:6px;
-    padding:2px 8px;border-radius:6px;
+    margin-top:7px;padding:3px 9px;border-radius:6px;
+    font-size:11px;font-weight:600;letter-spacing:.02em;
   }
-  .pbadge.on{background:rgba(52,211,153,.1);color:var(--green)}
-  .pbadge.off{background:rgba(255,255,255,.05);color:var(--muted)}
-  .pbadge.warn{background:rgba(251,191,36,.1);color:var(--yellow)}
-  .pbadge .dot{width:5px;height:5px;border-radius:50%;background:currentColor}
+  .pstatus.on{background:rgba(34,211,165,.12);color:var(--green);border:1px solid rgba(34,211,165,.25)}
+  .pstatus.on .dot{width:5px;height:5px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+  .pstatus.off{background:rgba(255,255,255,.04);color:var(--muted2);border:1px solid rgba(255,255,255,.06)}
+  .pstatus.off .dot{width:5px;height:5px;border-radius:50%;background:var(--muted2)}
+  .pstatus.pending{background:rgba(246,173,85,.1);color:var(--yellow);border:1px solid rgba(246,173,85,.25)}
+  .pstatus.pending .dot{width:5px;height:5px;border-radius:50%;background:var(--yellow);animation:pulse 1s infinite}
 
+  /* ── ACTIONS ──────────────────────────────────────────────── */
   .pactions{display:flex;align-items:center;gap:10px;flex-shrink:0}
   .btn-upd{
-    background:var(--s2);border:1px solid var(--b2);
-    color:var(--muted);font-size:12px;font-weight:500;
-    padding:7px 12px;border-radius:8px;cursor:pointer;
-    display:flex;align-items:center;gap:5px;font-family:inherit;
+    background:var(--s2);border:1px solid var(--border);color:var(--muted);
+    padding:8px 13px;border-radius:10px;cursor:pointer;font-family:inherit;
+    font-size:12px;font-weight:500;display:flex;align-items:center;gap:5px;
     transition:all .2s;white-space:nowrap;
   }
   .btn-upd:hover{border-color:var(--accent);color:var(--accent);background:var(--ag)}
 
-  /* TOGGLE */
-  .toggle{position:relative;width:44px;height:24px;cursor:pointer;flex-shrink:0}
-  .toggle input{opacity:0;width:0;height:0}
-  .slider{position:absolute;inset:0;background:var(--b2);border-radius:24px;transition:.25s}
-  .slider::before{content:'';position:absolute;left:3px;top:3px;width:18px;height:18px;border-radius:50%;background:var(--muted);transition:.25s}
-  .toggle input:checked+.slider{background:var(--accent)}
-  .toggle input:checked+.slider::before{transform:translateX(20px);background:#fff}
+  /* ── TOGGLE ───────────────────────────────────────────────── */
+  .toggle{position:relative;width:46px;height:26px;cursor:pointer;flex-shrink:0}
+  .toggle input{opacity:0;width:0;height:0;position:absolute}
+  .tslider{
+    position:absolute;inset:0;border-radius:26px;
+    background:var(--s3);border:1.5px solid var(--b2);
+    transition:.25s;
+  }
+  .tslider::before{
+    content:'';position:absolute;left:3px;top:3px;
+    width:18px;height:18px;border-radius:50%;
+    background:var(--muted2);transition:.25s;
+  }
+  .toggle input:checked + .tslider{
+    background:var(--pcolor,var(--accent));
+    border-color:var(--pcolor,var(--accent));
+  }
+  .toggle input:checked + .tslider::before{transform:translateX(20px);background:#fff}
 
-  /* ADD FORM */
-  .add-card{
+  /* ── ADD PANEL ────────────────────────────────────────────── */
+  .add-panel{
     background:var(--surface);border:1px dashed var(--b2);
-    border-radius:var(--r);padding:22px 24px;
+    border-radius:var(--r);padding:24px;
   }
-  .add-hd{display:flex;align-items:center;gap:10px;margin-bottom:16px}
-  .add-hd .icon{width:32px;height:32px;border-radius:8px;background:var(--ag);border:1px solid rgba(124,111,247,.3);display:flex;align-items:center;justify-content:center}
-  .add-hd h3{font-size:14px;font-weight:600}
+  .add-head{display:flex;align-items:center;gap:10px;margin-bottom:18px}
+  .add-head .add-icon{
+    width:34px;height:34px;border-radius:9px;
+    background:var(--ag);border:1px solid rgba(108,99,255,.3);
+    display:flex;align-items:center;justify-content:center;color:var(--accent);flex-shrink:0;
+  }
+  .add-head h3{font-size:14px;font-weight:700}
+  .add-head p{font-size:12px;color:var(--muted);margin-top:2px}
   .frow{display:flex;gap:10px;flex-wrap:wrap}
-  .frow input{
-    flex:1;min-width:200px;padding:11px 14px;border-radius:10px;
-    border:1px solid var(--border);background:var(--s2);color:var(--text);
-    font-size:13px;outline:none;font-family:inherit;transition:border-color .2s;
+  .finput{
+    flex:1;min-width:200px;padding:11px 15px;border-radius:11px;
+    border:1.5px solid var(--border);background:var(--s2);color:var(--text);
+    font-size:13px;font-family:inherit;outline:none;
+    transition:border-color .2s,box-shadow .2s;
   }
-  .frow input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--ag)}
-  .hint{font-size:12px;color:var(--muted);margin-top:10px;line-height:1.6}
-  .btn-primary{
-    background:var(--accent);color:#fff;border:none;
-    padding:11px 18px;border-radius:10px;
-    font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;
-    display:flex;align-items:center;gap:6px;transition:opacity .2s;white-space:nowrap;
+  .finput:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--ag)}
+  .finput::placeholder{color:var(--muted2)}
+  .btn-add{
+    background:var(--accent);color:#fff;border:none;border-radius:11px;
+    padding:11px 20px;font-size:13px;font-weight:700;cursor:pointer;
+    font-family:inherit;display:flex;align-items:center;gap:6px;
+    transition:opacity .2s,transform .15s;white-space:nowrap;
   }
-  .btn-primary:hover{opacity:.88}
-  .btn-primary:disabled{opacity:.4;cursor:not-allowed}
+  .btn-add:hover{opacity:.88;transform:translateY(-1px)}
+  .btn-add:active{transform:translateY(0)}
+  .btn-add:disabled{opacity:.4;cursor:not-allowed;transform:none}
+  .hint{font-size:12px;color:var(--muted);margin-top:12px;line-height:1.65}
+  .hint code{background:var(--s2);padding:1px 6px;border-radius:4px;font-size:11px}
 
-  /* MODAL */
+  /* ── MODAL ────────────────────────────────────────────────── */
   .overlay{
-    display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);
+    display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);
     z-index:50;align-items:center;justify-content:center;padding:16px;
-    backdrop-filter:blur(4px);
+    backdrop-filter:blur(6px);
   }
   .overlay.open{display:flex}
   .modal{
     background:var(--surface);border:1px solid var(--b2);
-    border-radius:var(--r);padding:28px;width:100%;max-width:460px;
-    box-shadow:0 20px 60px rgba(0,0,0,.6);
+    border-radius:var(--r);padding:30px;width:100%;max-width:480px;
+    box-shadow:0 24px 80px rgba(0,0,0,.7);animation:slideUp .2s ease;
   }
-  .modal-hd{display:flex;align-items:center;gap:10px;margin-bottom:6px}
-  .modal h3{font-size:16px;font-weight:700}
-  .modal p{font-size:13px;color:var(--muted);margin:6px 0 18px;line-height:1.5}
-  .modal input{
-    width:100%;padding:12px 14px;border-radius:10px;
-    border:1px solid var(--border);background:var(--s2);color:var(--text);
-    font-size:13px;outline:none;margin-bottom:16px;font-family:inherit;
+  @keyframes slideUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+  .modal-head{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+  .modal h3{font-size:17px;font-weight:700}
+  .modal-desc{font-size:13px;color:var(--muted);margin-bottom:20px;line-height:1.5}
+  .modal-input{
+    width:100%;padding:12px 15px;border-radius:11px;
+    border:1.5px solid var(--border);background:var(--s2);color:var(--text);
+    font-size:13px;font-family:inherit;outline:none;margin-bottom:18px;
+    transition:border-color .2s,box-shadow .2s;
   }
-  .modal input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--ag)}
+  .modal-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--ag)}
   .modal-acts{display:flex;gap:10px;justify-content:flex-end}
   .btn-cancel{
-    background:var(--s2);border:1px solid var(--b2);color:var(--muted);
-    padding:10px 18px;border-radius:10px;cursor:pointer;font-size:13px;
-    font-family:inherit;transition:border-color .2s;
+    background:var(--s2);border:1.5px solid var(--border);color:var(--muted);
+    padding:10px 20px;border-radius:10px;cursor:pointer;font-size:13px;
+    font-family:inherit;font-weight:500;transition:all .2s;
   }
-  .btn-cancel:hover{color:var(--text);border-color:var(--border)}
+  .btn-cancel:hover{color:var(--text);border-color:var(--b2)}
+  .btn-confirm{
+    background:var(--accent);color:#fff;border:none;
+    padding:10px 20px;border-radius:10px;cursor:pointer;font-size:13px;
+    font-weight:700;font-family:inherit;display:flex;align-items:center;gap:6px;
+    transition:opacity .2s;
+  }
+  .btn-confirm:hover{opacity:.88}
+  .btn-confirm:disabled{opacity:.4;cursor:not-allowed}
 
-  /* TOAST */
+  /* ── TOAST ────────────────────────────────────────────────── */
   #toast{
-    position:fixed;bottom:24px;right:24px;max-width:340px;
-    background:var(--s2);border:1px solid var(--b2);
-    border-radius:12px;padding:13px 18px;font-size:13px;
-    box-shadow:0 8px 32px rgba(0,0,0,.5);opacity:0;
-    transition:opacity .3s,transform .3s;pointer-events:none;z-index:100;
-    display:flex;align-items:center;gap:10px;transform:translateY(8px);
+    position:fixed;bottom:24px;right:24px;max-width:340px;z-index:100;
+    background:var(--s2);border:1px solid var(--b2);border-radius:12px;
+    padding:13px 18px;font-size:13px;display:flex;align-items:center;gap:10px;
+    box-shadow:0 10px 40px rgba(0,0,0,.5);
+    opacity:0;transform:translateY(10px) scale(.97);
+    transition:opacity .3s,transform .3s;pointer-events:none;
   }
-  #toast.show{opacity:1;transform:translateY(0)}
-  #toast.ok{border-color:rgba(52,211,153,.4);color:var(--green)}
-  #toast.err{border-color:rgba(248,113,113,.4);color:var(--red)}
+  #toast.show{opacity:1;transform:translateY(0) scale(1)}
+  #toast.ok{border-color:rgba(34,211,165,.4);color:var(--green)}
+  #toast.err{border-color:rgba(245,101,101,.4);color:var(--red)}
 
-  .spinner{animation:spin .8s linear infinite;display:inline-block}
+  .spin{animation:spin .7s linear infinite;display:inline-block}
   @keyframes spin{to{transform:rotate(360deg)}}
 
-  @media(max-width:540px){
-    header{padding:12px 14px}
-    main{padding:18px 12px}
-    .card{padding:14px 12px}
+  @media(max-width:600px){
+    .stats{grid-template-columns:repeat(2,1fr)}
+    .pcard{padding:14px 14px}
     .btn-upd span{display:none}
-    .stats{gap:8px}
-    .addon-banner{flex-direction:column;align-items:flex-start}
+    .addon-bar{flex-direction:column;align-items:flex-start}
+    header{padding:0 14px}
+    main{padding:16px 10px 40px}
   }
   </style>
   </head>
   <body>
 
   <header>
-    <div class="logo-box">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-        <rect x="2" y="7" width="20" height="14" rx="2"/>
+    <div class="logo">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+        <rect x="2" y="7" width="20" height="14" rx="2.5"/>
         <path d="M16 3H8L6 7h12z"/>
-        <path d="M10 11l5 3-5 3z" fill="currentColor" stroke="none"/>
+        <path d="M10 11.5l5.5 3-5.5 3z" fill="currentColor" stroke="none"/>
       </svg>
     </div>
-    <div>
+    <div class="hinfo">
       <h1>Nuvio Dashboard</h1>
       <p>Addon Stremio — Providers francophones</p>
     </div>
-    <div class="hbadge" id="hbadge"><span class="dot"></span><span id="hbadge-txt">Chargement...</span></div>
+    <div class="hpill loading" id="hpill">
+      <span class="dot"></span>
+      <span id="hpill-txt">Chargement…</span>
+    </div>
   </header>
 
   <main>
 
-    <!-- ADDON LINK BANNER -->
-    <div class="addon-banner">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
-        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
-      </svg>
-      <span class="ab-label">Lien Addon Stremio</span>
-      <div class="addon-url" id="addon-url">Chargement...</div>
+    <!-- ADDON LINK -->
+    <div class="addon-bar">
+      <div class="ab-left">
+        <div class="ab-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+          </svg>
+        </div>
+        <div style="min-width:0">
+          <div class="ab-label">Lien Addon Stremio</div>
+          <div class="ab-url" id="addon-url">Chargement…</div>
+        </div>
+      </div>
       <button class="btn-copy" onclick="copyAddon()">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
           <rect x="9" y="9" width="13" height="13" rx="2"/>
           <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
         </svg>
@@ -271,57 +331,59 @@
 
     <!-- STATS -->
     <div class="stats">
-      <div class="stat accent"><div class="stat-v" id="s-active">—</div><div class="stat-l">Actifs</div></div>
-      <div class="stat"><div class="stat-v" id="s-total">—</div><div class="stat-l">Total</div></div>
-      <div class="stat"><div class="stat-v" style="color:var(--green)">ON</div><div class="stat-l">Filtre liens morts</div></div>
-      <div class="stat"><div class="stat-v" style="color:var(--accent)">5 min</div><div class="stat-l">Cache stream</div></div>
+      <div class="stat accent"><div class="stat-num" id="s-on">—</div><div class="stat-lbl">Providers actifs</div></div>
+      <div class="stat"><div class="stat-num" id="s-total">—</div><div class="stat-lbl">Total providers</div></div>
+      <div class="stat green"><div class="stat-num">ON</div><div class="stat-lbl">Filtre liens morts</div></div>
+      <div class="stat"><div class="stat-num" style="color:var(--yellow)">5 min</div><div class="stat-lbl">Cache streams</div></div>
     </div>
 
     <!-- PROVIDERS -->
-    <div class="sec"><span class="sec-title">Providers de streaming</span><div class="sec-line"></div></div>
-    <div class="grid" id="grid">
-      <div style="color:var(--muted);padding:20px 0;font-size:14px">Chargement...</div>
+    <div class="sh"><span class="sh-title">Providers de streaming</span><div class="sh-line"></div></div>
+    <div class="pgrid" id="pgrid">
+      <div style="color:var(--muted);padding:24px 0;font-size:14px">Chargement des providers…</div>
     </div>
 
     <!-- ADD PROVIDER -->
-    <div class="sec" style="margin-top:8px"><span class="sec-title">Gestion</span><div class="sec-line"></div></div>
-    <div class="add-card">
-      <div class="add-hd">
-        <div class="icon">
+    <div class="sh" style="margin-top:8px"><span class="sh-title">Gestion</span><div class="sh-line"></div></div>
+    <div class="add-panel">
+      <div class="add-head">
+        <div class="add-icon">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
         </div>
-        <h3>Installer ou mettre à jour un provider</h3>
+        <div>
+          <h3>Installer / mettre à jour un provider</h3>
+          <p>Le fichier sera ajouté au repo GitHub. Render redéploie en ~2 min.</p>
+        </div>
       </div>
       <div class="frow">
-        <input type="url" id="add-url" placeholder="https://exemple.com/provider.js"/>
-        <input type="text" id="add-name" placeholder="Nom (optionnel)" style="max-width:160px"/>
-        <button class="btn-primary" id="add-btn" onclick="addProvider()">
+        <input type="url" id="add-url"  class="finput" placeholder="https://exemple.com/provider.js"/>
+        <input type="text" id="add-name" class="finput" style="max-width:180px" placeholder="Nom (optionnel)"/>
+        <button class="btn-add" id="add-btn" onclick="addProvider()">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
           Ajouter
         </button>
       </div>
       <p class="hint">
-        Le fichier <code style="background:var(--s2);padding:1px 5px;border-radius:4px;font-size:11px">.js</code>
-        sera ajouté au repo GitHub. Render redéploiera en ~2 min.<br>
-        Pour <strong>mettre à jour</strong> un provider existant, donne le même nom que le provider actuel.
+        Pour <strong>mettre à jour</strong> un provider existant, donne le même nom que le provider actuel.<br>
+        Formats acceptés : <code>.js</code> — le cache TMDB est vidé automatiquement après ajout.
       </p>
     </div>
 
   </main>
 
   <!-- UPDATE MODAL -->
-  <div class="overlay" id="modal">
+  <div class="overlay" id="modal" onclick="if(event.target===this)closeModal()">
     <div class="modal">
-      <div class="modal-hd">
+      <div class="modal-head">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/><polyline points="21 3 21 9 15 9"/></svg>
         <h3>Mettre à jour le provider</h3>
       </div>
-      <p id="modal-desc">Entrez l'URL du fichier .js de remplacement.</p>
-      <input type="url" id="modal-url" placeholder="https://exemple.com/provider.js"
-        onkeydown="if(event.key==='Enter')confirmUpd()"/>
+      <p class="modal-desc" id="modal-desc">Entrez l'URL du fichier .js de remplacement pour ce provider.</p>
+      <input class="modal-input" type="url" id="modal-url" placeholder="https://exemple.com/provider.js"
+        onkeydown="if(event.key==='Enter')doUpdate()"/>
       <div class="modal-acts">
         <button class="btn-cancel" onclick="closeModal()">Annuler</button>
-        <button class="btn-primary" id="modal-btn" onclick="confirmUpd()">
+        <button class="btn-confirm" id="modal-btn" onclick="doUpdate()">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/><polyline points="21 3 21 9 15 9"/></svg>
           Mettre à jour
         </button>
@@ -329,136 +391,234 @@
     </div>
   </div>
 
-  <div id="toast"><span id="t-icon"></span><span id="t-msg"></span></div>
+  <div id="toast"><span id="t-ico"></span><span id="t-msg"></span></div>
 
   <script>
-  // ── CONFIG ────────────────────────────────────────────────────────────────────
+  // ── CONFIG ──────────────────────────────────────────────────────
   const ADDON_URL = window.location.origin + '/manifest.json';
 
-  const PROVIDERS_META = {
-    frenchstream: { abbr: 'FS', logo: null, desc: 'Films & séries en VF' },
-    movix:        { abbr: 'MX', logo: null, desc: 'Multi-sources HD — VF / VOSTFR' },
-    nakastream:   { abbr: 'NS', logo: null, desc: 'VF · VOSTFR · MULTI — M3U8 HD' },
-    nakios:       { abbr: 'NK', logo: null, desc: 'VF · VOSTFR · MULTI — 1080p / 4K' },
-    purstream:    { abbr: 'PS', logo: null, desc: 'Streaming haute qualité — 4K / 1080p' },
-    toflix:       { abbr: 'TF', logo: null, desc: 'FastFlux + Zeus SSE — VF' },
-    vstream:      { abbr: 'VS', logo: null, desc: 'VF · VOSTFR · MULTI — HD' },
+  // Provider metadata: colors, logos, descriptions
+  const PM = {
+    frenchstream: {
+      name:'FrenchStream',
+      logo:null, abbr:'FS',
+      c1:'#2563eb',c2:'#1d4ed8',glow:'37,99,235',
+      color:'#60a5fa',
+      desc:'Films & séries en VF',
+      tags:['VF','HD']
+    },
+    movix: {
+      name:'Movix',
+      logo:'https://movix.fr/favicon.ico', abbr:'MX',
+      c1:'#7c3aed',c2:'#5b21b6',glow:'124,58,237',
+      color:'#a78bfa',
+      desc:'Multi-sources HD — VF & VOSTFR',
+      tags:['VF','VOSTFR','HD']
+    },
+    nakastream: {
+      name:'Nakastream',
+      logo:null, abbr:'NK',
+      c1:'#0891b2',c2:'#0e7490',glow:'8,145,178',
+      color:'#22d3ee',
+      desc:'VF · VOSTFR · MULTI — M3U8 HD',
+      tags:['VF','M3U8','HD']
+    },
+    nakios: {
+      name:'Nakios',
+      logo:'https://nakios.ink/favicon.png', abbr:'NI',
+      c1:'#d97706',c2:'#b45309',glow:'217,119,6',
+      color:'#fbbf24',
+      desc:'VF · VOSTFR · MULTI — 1080p / 4K',
+      tags:['VF','4K','1080p']
+    },
+    purstream: {
+      name:'Purstream',
+      logo:null, abbr:'PS',
+      c1:'#dc2626',c2:'#b91c1c',glow:'220,38,38',
+      color:'#f87171',
+      desc:'Streaming haute qualité — 4K / 1080p',
+      tags:['4K','1080p']
+    },
+    toflix: {
+      name:'Toflix',
+      logo:null, abbr:'TF',
+      c1:'#059669',c2:'#047857',glow:'5,150,105',
+      color:'#34d399',
+      desc:'FastFlux + Zeus SSE — VF',
+      tags:['VF','SSE']
+    },
+    vstream: {
+      name:'Vstream',
+      logo:null, abbr:'VS',
+      c1:'#db2777',c2:'#be185d',glow:'219,39,119',
+      color:'#f472b6',
+      desc:'VF · VOSTFR · MULTI — HD',
+      tags:['VF','VOSTFR','HD']
+    }
   };
 
-  const IC_REFRESH = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12a9 9 0 1 1-6.219-8.56"/><polyline points="21 3 21 9 15 9"/></svg>';
-  const IC_SPIN    = '<svg class="spinner" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>';
-  const IC_PLUS    = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>';
+  const SVG = {
+    refresh: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12a9 9 0 1 1-6.219-8.56"/><polyline points="21 3 21 9 15 9"/></svg>',
+    spin:    '<svg class="spin" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>',
+    plus:    '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>',
+    check:   '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>',
+    x:       '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
+  };
 
   let currentTarget = null;
 
-  // ── UTILS ─────────────────────────────────────────────────────────────────────
-  function h() { return { 'Content-Type': 'application/json' }; }
-
-  function toast(msg, type = 'ok') {
-    const el = document.getElementById('toast');
-    document.getElementById('t-icon').innerHTML = type === 'ok'
-      ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>'
-      : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
-    document.getElementById('t-msg').textContent = msg;
-    el.className = 'show ' + type;
-    setTimeout(() => el.className = '', 3500);
-  }
-
-  function copyAddon() {
-    navigator.clipboard.writeText(ADDON_URL).then(() => toast('Lien copié !'));
-  }
-
-  // ── INIT ADDON LINK ───────────────────────────────────────────────────────────
+  // ── INIT ────────────────────────────────────────────────────────
   document.getElementById('addon-url').textContent = ADDON_URL;
 
-  // ── RENDER PROVIDERS ──────────────────────────────────────────────────────────
+  // ── TOAST ───────────────────────────────────────────────────────
+  function toast(msg, type='ok') {
+    const el = document.getElementById('toast');
+    document.getElementById('t-ico').innerHTML = type === 'ok' ? SVG.check : SVG.x;
+    document.getElementById('t-msg').textContent = msg;
+    el.className = 'show ' + type;
+    clearTimeout(el._t);
+    el._t = setTimeout(() => el.className = '', 3500);
+  }
+
+  // ── COPY ────────────────────────────────────────────────────────
+  function copyAddon() {
+    navigator.clipboard.writeText(ADDON_URL)
+      .then(() => toast('Lien copié dans le presse-papier !'))
+      .catch(() => {
+        const ta = document.createElement('textarea');
+        ta.value = ADDON_URL; document.body.appendChild(ta);
+        ta.select(); document.execCommand('copy');
+        document.body.removeChild(ta);
+        toast('Lien copié !');
+      });
+  }
+
+  // ── BUILD LOGO HTML ─────────────────────────────────────────────
+  function logoHtml(name, m) {
+    if (m.logo) {
+      // Real logo image with letter-mark fallback
+      const esc = m.abbr.replace(/'/g,"\'");
+      return '<img src="'+m.logo+'" alt="'+name+'" '+
+        'onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">' +
+        '<span class="plogo-letter" style="display:none;--pcolor1:'+m.c1+';--pcolor2:'+m.c2+'">'+m.abbr+'</span>';
+    }
+    return '<span class="plogo-letter" style="--pcolor1:'+m.c1+';--pcolor2:'+m.c2+'">'+m.abbr+'</span>';
+  }
+
+  // ── BUILD TAG HTML ──────────────────────────────────────────────
+  function tagsHtml(tags, color) {
+    return tags.map(t =>
+      '<span style="background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.08);'+
+      'color:'+color+';padding:1px 6px;border-radius:4px;font-size:10px;font-weight:600">'+t+'</span>'
+    ).join(' ');
+  }
+
+  // ── RENDER PROVIDERS ────────────────────────────────────────────
   function renderProviders(providers) {
-    const grid = document.getElementById('grid');
+    const grid = document.getElementById('pgrid');
     grid.innerHTML = '';
     const entries = Object.entries(providers);
+
     if (!entries.length) {
-      grid.innerHTML = '<div style="color:var(--muted);padding:20px 0;font-size:14px">Aucun provider trouvé.</div>';
+      grid.innerHTML = '<div style="color:var(--muted);padding:24px 0">Aucun provider trouvé.</div>';
       return;
     }
 
-    let active = 0, total = entries.length;
+    let active = 0;
     for (const [name, info] of entries) {
-      const enabled = info.enabled !== false;
-      const pending = info.pending;
-      if (enabled && !pending) active++;
+      const on = info.enabled !== false;
+      const pending = !!info.pending;
+      if (on && !pending) active++;
 
-      const meta = PROVIDERS_META[name] || { abbr: name.slice(0,2).toUpperCase(), logo: null, desc: 'Provider externe' };
-      const displayName = name.charAt(0).toUpperCase() + name.slice(1);
+      const m = PM[name] || {
+        name: name.charAt(0).toUpperCase()+name.slice(1),
+        logo: null, abbr: name.slice(0,2).toUpperCase(),
+        c1:'#334155',c2:'#1e293b',glow:'51,65,85',
+        color:'#94a3b8',
+        desc:'Provider externe',
+        tags:[]
+      };
 
-      const logoHtml = meta.logo
-        ? '<img src="' + meta.logo + '" onerror="this.parentNode.textContent='' + meta.abbr + ''" alt="' + name + '">'
-        : meta.abbr;
-
-      const badgeHtml = pending
-        ? '<span class="pbadge warn"><span class="dot"></span>En attente de redéploiement</span>'
-        : enabled
-          ? '<span class="pbadge on"><span class="dot"></span>Actif</span>'
-          : '<span class="pbadge off"><span class="dot"></span>Désactivé</span>';
+      const stateClass = pending ? 'pending' : on ? 'on' : 'off';
+      const statusBadge = pending
+        ? '<span class="pstatus pending"><span class="dot"></span>En attente de redéploiement</span>'
+        : on
+          ? '<span class="pstatus on"><span class="dot"></span>Actif</span>'
+          : '<span class="pstatus off"><span class="dot"></span>Désactivé</span>';
 
       const card = document.createElement('div');
-      card.id   = 'card-' + name;
-      card.className = 'card ' + (pending ? 'warn' : enabled ? 'on' : 'off');
+      card.id = 'card-' + name;
+      card.className = 'pcard ' + stateClass;
+      card.style.cssText = '--pcolor:'+m.color+';--pglow:'+m.glow;
       card.innerHTML =
-        '<div class="plogo">' + logoHtml + '</div>' +
-        '<div class="pinfo">' +
-          '<div class="pname">' + displayName + '</div>' +
-          '<div class="pdesc">' + meta.desc + '</div>' +
-          badgeHtml +
-        '</div>' +
-        '<div class="pactions">' +
-          '<button class="btn-upd" onclick="openModal('' + name + '')" title="Mettre à jour">' +
-            IC_REFRESH + '<span>Mettre à jour</span>' +
-          '</button>' +
-          '<label class="toggle" title="' + (enabled ? 'Désactiver' : 'Activer') + '">' +
-            '<input type="checkbox" ' + (enabled ? 'checked' : '') + ' onchange="toggle('' + name + '',this)">' +
-            '<span class="slider"></span>' +
-          '</label>' +
+        '<div class="plogo-wrap">'+logoHtml(name, m)+'</div>'+
+        '<div class="pinfo">'+
+          '<div class="pname">'+m.name+
+            '<span style="display:flex;gap:4px;align-items:center">'+tagsHtml(m.tags, m.color)+'</span>'+
+          '</div>'+
+          '<div class="pdesc">'+m.desc+'</div>'+
+          statusBadge+
+        '</div>'+
+        '<div class="pactions">'+
+          '<button class="btn-upd" onclick="openModal(''+name+'')" title="Mettre à jour">'+
+            SVG.refresh+'<span> Mettre à jour</span>'+
+          '</button>'+
+          '<label class="toggle" title="'+(on?'Désactiver':'Activer')+'">'+
+            '<input type="checkbox" '+(on?'checked':'')+' onchange="doToggle(''+name+'',this)">'+
+            '<span class="tslider" style="--pcolor:'+m.color+'"></span>'+
+          '</label>'+
         '</div>';
       grid.appendChild(card);
     }
 
-    document.getElementById('s-active').textContent = active;
-    document.getElementById('s-total').textContent = total;
+    document.getElementById('s-on').textContent = active;
+    document.getElementById('s-total').textContent = entries.length;
   }
 
-  // ── LOAD ──────────────────────────────────────────────────────────────────────
+  // ── LOAD ────────────────────────────────────────────────────────
   async function load() {
     try {
-      const res = await fetch('/api/dashboard/status', { headers: h() });
+      const res  = await fetch('/api/dashboard/status');
+      if (!res.ok) throw new Error('HTTP ' + res.status);
       const data = await res.json();
       renderProviders(data.providers || {});
-      const count = Object.values(data.providers || {}).filter(p => p.enabled !== false && !p.pending).length;
-      document.getElementById('hbadge-txt').textContent = count + ' actif' + (count > 1 ? 's' : '');
-      document.getElementById('hbadge').className = count > 0 ? 'hbadge' : 'hbadge offline';
+
+      const total = Object.keys(data.providers || {}).length;
+      const active = Object.values(data.providers || {}).filter(p => p.enabled !== false && !p.pending).length;
+      const pill = document.getElementById('hpill');
+      document.getElementById('hpill-txt').textContent = active + '/' + total + ' actif' + (active > 1 ? 's' : '');
+      pill.className = 'hpill ' + (active > 0 ? 'ok' : 'err');
     } catch(e) {
-      document.getElementById('hbadge-txt').textContent = 'Hors ligne';
-      document.getElementById('hbadge').className = 'hbadge offline';
-      document.getElementById('grid').innerHTML = '<div style="color:var(--red);padding:20px 0;font-size:14px">Impossible de joindre le serveur.</div>';
+      const pill = document.getElementById('hpill');
+      document.getElementById('hpill-txt').textContent = 'Hors ligne';
+      pill.className = 'hpill err';
+      document.getElementById('pgrid').innerHTML =
+        '<div style="color:var(--red);padding:24px 0">Impossible de joindre le serveur — '+e.message+'</div>';
     }
   }
 
-  // ── TOGGLE ────────────────────────────────────────────────────────────────────
-  async function toggle(name, cb) {
+  // ── TOGGLE ──────────────────────────────────────────────────────
+  async function doToggle(name, cb) {
     cb.disabled = true;
     try {
-      const res = await fetch('/api/dashboard/toggle/' + name, { method: 'POST', headers: h() });
+      const res  = await fetch('/api/dashboard/toggle/' + name, {
+        method:'POST', headers:{'Content-Type':'application/json'}
+      });
       const data = await res.json();
+      const on   = !!data.enabled;
       const card = document.getElementById('card-' + name);
       if (card) {
-        card.className = 'card ' + (data.enabled ? 'on' : 'off');
-        const b = card.querySelector('.pbadge');
-        if (b) {
-          b.className = 'pbadge ' + (data.enabled ? 'on' : 'off');
-          b.innerHTML = '<span class="dot"></span>' + (data.enabled ? 'Actif' : 'Désactivé');
+        const m = PM[name] || {};
+        card.className = 'pcard ' + (on ? 'on' : 'off');
+        card.style.cssText = '--pcolor:' + (m.color||'var(--accent)') + ';--pglow:' + (m.glow||'108,99,255');
+        const badge = card.querySelector('.pstatus');
+        if (badge) {
+          badge.className = 'pstatus ' + (on ? 'on' : 'off');
+          badge.innerHTML = '<span class="dot"></span>' + (on ? 'Actif' : 'Désactivé');
         }
       }
-      toast(data.enabled ? name + ' activé' : name + ' désactivé', data.enabled ? 'ok' : 'err');
-      load();
+      toast(data.enabled ? (name + ' activé ✓') : (name + ' désactivé'), data.enabled ? 'ok' : 'err');
+      setTimeout(load, 600);
     } catch(e) {
       toast('Erreur : ' + e.message, 'err');
       cb.checked = !cb.checked;
@@ -466,58 +626,62 @@
     cb.disabled = false;
   }
 
-  // ── MODAL ─────────────────────────────────────────────────────────────────────
+  // ── MODAL ───────────────────────────────────────────────────────
   function openModal(name) {
     currentTarget = name;
-    document.getElementById('modal-desc').textContent = 'URL du nouveau fichier .js pour remplacer "' + name + '".';
+    const m = PM[name] || {};
+    document.getElementById('modal-desc').textContent =
+      'URL du nouveau fichier .js pour remplacer "' + (m.name || name) + '".';
     document.getElementById('modal-url').value = '';
     document.getElementById('modal').classList.add('open');
-    setTimeout(() => document.getElementById('modal-url').focus(), 100);
+    setTimeout(() => document.getElementById('modal-url').focus(), 80);
   }
   function closeModal() {
     document.getElementById('modal').classList.remove('open');
     currentTarget = null;
   }
-  async function confirmUpd() {
+  async function doUpdate() {
     const url = document.getElementById('modal-url').value.trim();
     if (!url) { toast('URL requise', 'err'); return; }
     const btn = document.getElementById('modal-btn');
-    btn.disabled = true; btn.innerHTML = IC_SPIN + ' En cours...';
+    btn.disabled = true;
+    btn.innerHTML = SVG.spin + ' En cours…';
     try {
-      const res = await fetch('/api/dashboard/provider/add', {
-        method: 'POST', headers: h(), body: JSON.stringify({ url, name: currentTarget })
+      const res  = await fetch('/api/dashboard/provider/add', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ url, name: currentTarget })
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Erreur');
-      toast(data.message, 'ok');
-      closeModal(); setTimeout(load, 800);
+      if (!res.ok) throw new Error(data.error || 'Erreur serveur');
+      toast(data.message || 'Provider mis à jour !');
+      closeModal();
+      setTimeout(load, 800);
     } catch(e) { toast('Erreur : ' + e.message, 'err'); }
-    finally { btn.disabled = false; btn.innerHTML = IC_REFRESH + ' Mettre à jour'; }
+    finally { btn.disabled = false; btn.innerHTML = SVG.refresh + ' Mettre à jour'; }
   }
 
-  // ── ADD PROVIDER ──────────────────────────────────────────────────────────────
+  // ── ADD PROVIDER ─────────────────────────────────────────────────
   async function addProvider() {
     const url  = document.getElementById('add-url').value.trim();
     const name = document.getElementById('add-name').value.trim();
     if (!url) { toast('URL requise', 'err'); return; }
     const btn = document.getElementById('add-btn');
-    btn.disabled = true; btn.innerHTML = IC_SPIN + ' Ajout...';
+    btn.disabled = true;
+    btn.innerHTML = SVG.spin + ' Ajout…';
     try {
-      const res = await fetch('/api/dashboard/provider/add', {
-        method: 'POST', headers: h(), body: JSON.stringify({ url, name })
+      const res  = await fetch('/api/dashboard/provider/add', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ url, name })
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Erreur');
-      toast(data.message, 'ok');
+      if (!res.ok) throw new Error(data.error || 'Erreur serveur');
+      toast(data.message || 'Provider ajouté !');
       document.getElementById('add-url').value = '';
       document.getElementById('add-name').value = '';
       setTimeout(load, 800);
     } catch(e) { toast('Erreur : ' + e.message, 'err'); }
-    finally { btn.disabled = false; btn.innerHTML = IC_PLUS + ' Ajouter'; }
+    finally { btn.disabled = false; btn.innerHTML = SVG.plus + ' Ajouter'; }
   }
-
-  // Close modal on overlay click
-  document.getElementById('modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
 
   load();
   </script>
