@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nuvio Dashboard</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #222636;
+    --border: #2d3148;
+    --accent: #6c63ff;
+    --accent2: #4ade80;
+    --danger: #f87171;
+    --text: #e2e8f0;
+    --text2: #94a3b8;
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; min-height: 100vh; }
+
+  header {
+    background: linear-gradient(135deg, #1a1d27 0%, #16192a 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 20px 28px;
+    display: flex; align-items: center; gap: 14px;
+  }
+  header .logo { font-size: 26px; }
+  header h1 { font-size: 20px; font-weight: 700; }
+  header p { font-size: 13px; color: var(--text2); margin-top: 2px; }
+  .badge {
+    margin-left: auto; background: var(--accent2); color: #000;
+    font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 20px;
+  }
+  .badge.offline { background: var(--danger); color: #fff; }
+
+  main { max-width: 820px; margin: 0 auto; padding: 28px 16px; }
+
+  /* Password screen */
+  #login-screen {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    min-height: 60vh; gap: 16px;
+  }
+  #login-screen h2 { font-size: 18px; color: var(--text2); }
+  #login-screen input {
+    width: 280px; padding: 12px 16px; border-radius: var(--radius);
+    border: 1px solid var(--border); background: var(--surface2); color: var(--text);
+    font-size: 15px; outline: none;
+  }
+  #login-screen input:focus { border-color: var(--accent); }
+
+  .section-title {
+    font-size: 13px; font-weight: 600; letter-spacing: .08em;
+    text-transform: uppercase; color: var(--text2); margin-bottom: 14px;
+  }
+
+  /* Provider cards */
+  .providers-grid { display: grid; gap: 12px; margin-bottom: 36px; }
+  .provider-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 18px 20px;
+    display: flex; align-items: center; gap: 14px;
+    transition: border-color .2s;
+  }
+  .provider-card.disabled { opacity: .55; }
+  .provider-card:hover { border-color: var(--accent); }
+  .provider-icon {
+    width: 42px; height: 42px; border-radius: 10px;
+    background: var(--surface2); display: flex; align-items: center; justify-content: center;
+    font-size: 20px; flex-shrink: 0;
+  }
+  .provider-info { flex: 1; }
+  .provider-name { font-weight: 600; font-size: 15px; }
+  .provider-status { font-size: 12px; color: var(--text2); margin-top: 3px; }
+  .provider-status.on { color: var(--accent2); }
+  .provider-status.pending { color: #f59e0b; }
+
+  .provider-actions { display: flex; align-items: center; gap: 10px; }
+
+  /* Toggle switch */
+  .toggle { position: relative; width: 48px; height: 26px; cursor: pointer; }
+  .toggle input { opacity: 0; width: 0; height: 0; }
+  .slider {
+    position: absolute; inset: 0; background: var(--border); border-radius: 26px;
+    transition: .3s;
+  }
+  .slider:before {
+    content: ''; position: absolute; left: 3px; top: 3px;
+    width: 20px; height: 20px; border-radius: 50%; background: white; transition: .3s;
+  }
+  .toggle input:checked + .slider { background: var(--accent); }
+  .toggle input:checked + .slider:before { transform: translateX(22px); }
+
+  /* Update button */
+  .btn-update {
+    background: var(--surface2); border: 1px solid var(--border);
+    color: var(--text2); font-size: 12px; padding: 6px 12px; border-radius: 8px;
+    cursor: pointer; transition: all .2s; white-space: nowrap;
+  }
+  .btn-update:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* Add provider form */
+  .add-card {
+    background: var(--surface); border: 1px dashed var(--border);
+    border-radius: var(--radius); padding: 22px;
+  }
+  .add-card h3 { font-size: 15px; font-weight: 600; margin-bottom: 16px; }
+  .form-row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .form-row input {
+    flex: 1; min-width: 200px; padding: 11px 14px; border-radius: 10px;
+    border: 1px solid var(--border); background: var(--surface2); color: var(--text);
+    font-size: 14px; outline: none;
+  }
+  .form-row input:focus { border-color: var(--accent); }
+  .btn-primary {
+    background: var(--accent); color: #fff; border: none; padding: 11px 20px;
+    border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer;
+    transition: opacity .2s; white-space: nowrap;
+  }
+  .btn-primary:hover { opacity: .85; }
+  .btn-primary:disabled { opacity: .4; cursor: not-allowed; }
+  .form-hint { font-size: 12px; color: var(--text2); margin-top: 10px; }
+
+  /* Toast */
+  #toast {
+    position: fixed; bottom: 24px; right: 24px; left: 24px; max-width: 380px;
+    margin: 0 auto; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 12px; padding: 14px 18px; font-size: 14px;
+    box-shadow: 0 8px 32px rgba(0,0,0,.4); opacity: 0; transition: opacity .3s;
+    pointer-events: none; z-index: 100;
+  }
+  #toast.show { opacity: 1; }
+  #toast.success { border-color: var(--accent2); color: var(--accent2); }
+  #toast.error { border-color: var(--danger); color: var(--danger); }
+
+  /* Modal */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,.6);
+    z-index: 50; align-items: center; justify-content: center; padding: 16px;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 24px; width: 100%; max-width: 460px;
+  }
+  .modal h3 { font-size: 16px; margin-bottom: 6px; }
+  .modal p { font-size: 13px; color: var(--text2); margin-bottom: 18px; }
+  .modal input {
+    width: 100%; padding: 11px 14px; border-radius: 10px;
+    border: 1px solid var(--border); background: var(--surface2); color: var(--text);
+    font-size: 14px; outline: none; margin-bottom: 14px;
+  }
+  .modal input:focus { border-color: var(--accent); }
+  .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+  .btn-cancel {
+    background: var(--surface2); border: 1px solid var(--border); color: var(--text2);
+    padding: 10px 18px; border-radius: 10px; cursor: pointer; font-size: 14px;
+  }
+
+  .spinner { animation: spin 1s linear infinite; display: inline-block; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  @media (max-width: 500px) {
+    header { flex-wrap: wrap; }
+    .form-row { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">🎬</div>
+  <div>
+    <h1>Nuvio Dashboard</h1>
+    <p>Gestion des providers francophones</p>
+  </div>
+  <div class="badge" id="status-badge">Chargement...</div>
+</header>
+
+<main>
+
+  <!-- Login screen -->
+  <div id="login-screen" style="display:none">
+    <h2>🔒 Accès protégé</h2>
+    <input type="password" id="pwd-input" placeholder="Mot de passe" />
+    <button class="btn-primary" onclick="doLogin()">Entrer</button>
+  </div>
+
+  <!-- Dashboard content -->
+  <div id="dashboard-content" style="display:none">
+
+    <p class="section-title">Providers actifs</p>
+    <div class="providers-grid" id="providers-list">
+      <div style="color:var(--text2);font-size:14px">Chargement...</div>
+    </div>
+
+    <p class="section-title">Ajouter ou mettre à jour un provider</p>
+    <div class="add-card">
+      <h3>📥 Installer depuis une URL</h3>
+      <div class="form-row">
+        <input type="url" id="add-url" placeholder="https://exemple.com/provider.js" />
+        <input type="text" id="add-name" placeholder="Nom (optionnel)" style="max-width:160px" />
+        <button class="btn-primary" id="add-btn" onclick="addProvider()">Ajouter</button>
+      </div>
+      <p class="form-hint">
+        Le fichier .js sera ajouté à ton repo GitHub. Render redéploiera automatiquement en ~2 minutes.<br>
+        Pour <strong>mettre à jour</strong> un provider existant, donne le même nom que le provider actuel.
+      </p>
+    </div>
+
+  </div>
+</main>
+
+<!-- Modal mise à jour URL -->
+<div class="modal-overlay" id="update-modal">
+  <div class="modal">
+    <h3>🔄 Mettre à jour le provider</h3>
+    <p id="update-modal-desc">Entrez l'URL du nouveau fichier .js pour remplacer ce provider.</p>
+    <input type="url" id="update-url" placeholder="https://exemple.com/provider.js" />
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Annuler</button>
+      <button class="btn-primary" id="update-confirm-btn" onclick="confirmUpdate()">Mettre à jour</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const PROVIDER_ICONS = { nakios:'🎭', purstream:'🌊', movix:'🎬', toflix:'📺', frenchstream:'🇫🇷' };
+let password = localStorage.getItem('dashboard_pwd') || '';
+let passwordRequired = false;
+let currentUpdateTarget = null;
+
+function headers() {
+  const h = { 'Content-Type': 'application/json' };
+  if (password) h['x-dashboard-password'] = password;
+  return h;
+}
+
+function toast(msg, type = 'success') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'show ' + type;
+  setTimeout(() => el.className = '', 3500);
+}
+
+async function load() {
+  try {
+    const res = await fetch('/api/dashboard/status', { headers: headers() });
+    if (res.status === 401) {
+      passwordRequired = true;
+      document.getElementById('login-screen').style.display = 'flex';
+      return;
+    }
+    const data = await res.json();
+    passwordRequired = data.passwordRequired;
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('dashboard-content').style.display = 'block';
+    renderProviders(data.providers);
+
+    const badge = document.getElementById('status-badge');
+    const activeCount = Object.values(data.providers).filter(p => p.enabled && !p.pending).length;
+    badge.textContent = `${activeCount} provider${activeCount > 1 ? 's' : ''} actif${activeCount > 1 ? 's' : ''}`;
+    badge.className = 'badge';
+  } catch (e) {
+    document.getElementById('status-badge').textContent = 'Erreur';
+    document.getElementById('status-badge').className = 'badge offline';
+  }
+}
+
+function renderProviders(providers) {
+  const list = document.getElementById('providers-list');
+  list.innerHTML = '';
+  if (!Object.keys(providers).length) {
+    list.innerHTML = '<div style="color:var(--text2);font-size:14px">Aucun provider trouvé.</div>';
+    return;
+  }
+  for (const [name, info] of Object.entries(providers)) {
+    const enabled = info.enabled;
+    const pending = info.pending;
+    const icon = PROVIDER_ICONS[name] || '🔌';
+    const card = document.createElement('div');
+    card.className = 'provider-card' + (enabled ? '' : ' disabled');
+    card.id = 'card-' + name;
+    card.innerHTML = `
+      <div class="provider-icon">${icon}</div>
+      <div class="provider-info">
+        <div class="provider-name">${name.charAt(0).toUpperCase() + name.slice(1)}</div>
+        <div class="provider-status ${pending ? 'pending' : (enabled ? 'on' : '')}">
+          ${pending ? '⏳ En attente de redéploiement' : (enabled ? '● Actif' : '○ Désactivé')}
+        </div>
+      </div>
+      <div class="provider-actions">
+        <button class="btn-update" onclick="openUpdateModal('${name}')">🔄 Mettre à jour</button>
+        <label class="toggle">
+          <input type="checkbox" ${enabled ? 'checked' : ''} onchange="toggleProvider('${name}', this)">
+          <span class="slider"></span>
+        </label>
+      </div>`;
+    list.appendChild(card);
+  }
+}
+
+async function toggleProvider(name, checkbox) {
+  checkbox.disabled = true;
+  try {
+    const res = await fetch(`/api/dashboard/toggle/${name}`, { method: 'POST', headers: headers() });
+    if (res.status === 401) { toast('Mot de passe incorrect', 'error'); checkbox.checked = !checkbox.checked; return; }
+    const data = await res.json();
+    const card = document.getElementById('card-' + name);
+    if (card) card.className = 'provider-card' + (data.enabled ? '' : ' disabled');
+    const statusEl = card?.querySelector('.provider-status');
+    if (statusEl) { statusEl.textContent = data.enabled ? '● Actif' : '○ Désactivé'; statusEl.className = 'provider-status' + (data.enabled ? ' on' : ''); }
+    toast(data.enabled ? `${name} activé ✓` : `${name} désactivé`, data.enabled ? 'success' : 'error');
+    load();
+  } catch (e) { toast('Erreur : ' + e.message, 'error'); checkbox.checked = !checkbox.checked; }
+  finally { checkbox.disabled = false; }
+}
+
+function openUpdateModal(name) {
+  currentUpdateTarget = name;
+  document.getElementById('update-modal-desc').textContent = `Entrez l'URL du nouveau fichier .js pour remplacer "${name}".`;
+  document.getElementById('update-url').value = '';
+  document.getElementById('update-modal').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('update-modal').classList.remove('open');
+  currentUpdateTarget = null;
+}
+
+async function confirmUpdate() {
+  const url = document.getElementById('update-url').value.trim();
+  if (!url) { toast('URL requise', 'error'); return; }
+  const btn = document.getElementById('update-confirm-btn');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner">⟳</span> En cours...';
+  try {
+    const res = await fetch('/api/dashboard/provider/add', {
+      method: 'POST', headers: headers(),
+      body: JSON.stringify({ url, name: currentUpdateTarget })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Erreur');
+    toast('✓ ' + data.message, 'success');
+    closeModal();
+    setTimeout(load, 1000);
+  } catch (e) { toast('Erreur : ' + e.message, 'error'); }
+  finally { btn.disabled = false; btn.textContent = 'Mettre à jour'; }
+}
+
+async function addProvider() {
+  const url = document.getElementById('add-url').value.trim();
+  const name = document.getElementById('add-name').value.trim();
+  if (!url) { toast('URL du fichier .js requise', 'error'); return; }
+  const btn = document.getElementById('add-btn');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner">⟳</span>';
+  try {
+    const res = await fetch('/api/dashboard/provider/add', {
+      method: 'POST', headers: headers(),
+      body: JSON.stringify({ url, name })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Erreur');
+    toast('✓ ' + data.message, 'success');
+    document.getElementById('add-url').value = '';
+    document.getElementById('add-name').value = '';
+    setTimeout(load, 1000);
+  } catch (e) { toast('Erreur : ' + e.message, 'error'); }
+  finally { btn.disabled = false; btn.textContent = 'Ajouter'; }
+}
+
+function doLogin() {
+  password = document.getElementById('pwd-input').value;
+  localStorage.setItem('dashboard_pwd', password);
+  load();
+}
+document.getElementById('pwd-input')?.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+
+// Fermer modal en cliquant dehors
+document.getElementById('update-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+load();
+</script>
+</body>
+</html>
