@@ -8,6 +8,24 @@ const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 const GITHUB_REPO = process.env.GITHUB_REPO || 'Snixi92/nuvio-french-providers';
 const DASHBOARD_PASSWORD = process.env.DASHBOARD_PASSWORD || '';
 
+// ─── Optimisation : timeout et cache ────────────────────────────────────────
+const PROVIDER_TIMEOUT_MS = 8000;  // max 8s par provider
+const TMDB_CACHE_TTL  = 60 * 60 * 1000;   // 1h pour les conversions IMDB→TMDB
+const STREAM_CACHE_TTL = 5 * 60 * 1000;   // 5 min pour les résultats de streams
+
+const tmdbCache  = new Map(); // key: "type:imdbId" → { id, ts }
+const streamCache = new Map(); // key: "type:tmdbId:s:e" → { streams, ts }
+
+function withTimeout(promise, ms, name) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error(`[${name}] Timeout ${ms}ms`)), ms)
+    )
+  ]);
+}
+
+// ─── Middlewares ─────────────────────────────────────────────────────────────
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Headers', '*');
@@ -17,15 +35,15 @@ app.use((req, res, next) => {
 });
 app.use(express.json());
 
-// --- Config ---
+// ─── Config ──────────────────────────────────────────────────────────────────
 let config = { providers: {} };
 try {
   config = JSON.parse(fs.readFileSync(path.join(__dirname, 'config.json'), 'utf8'));
 } catch (e) {
-  console.log('[Config] config.json absent, utilisation des valeurs par défaut');
+  console.log('[Config] Pas de config.json, valeurs par défaut');
 }
 
-// --- Chargement des providers ---
+// ─── Providers ───────────────────────────────────────────────────────────────
 const providers = {};
 const providerDir = path.join(__dirname, 'providers');
 try {
@@ -35,41 +53,32 @@ try {
     try {
       providers[name] = require(path.join(providerDir, file));
       if (!config.providers[name]) config.providers[name] = { enabled: true };
-      console.log('[Server] Provider chargé :', name);
+      console.log('[Server] ✓ Provider :', name);
     } catch (e) {
-      console.warn('[Server] Erreur provider', name, ':', e.message);
+      console.warn('[Server] ✗ Provider', name, ':', e.message);
     }
   }
 } catch (e) {
-  console.error('[Server] Impossible de lire le dossier providers :', e.message);
+  console.error('[Server] Impossible de lire /providers :', e.message);
 }
 
 const manifest = require('./manifest.json');
 
-// --- GitHub API ---
+// ─── GitHub API ───────────────────────────────────────────────────────────────
 async function githubGetFile(filePath) {
   const res = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${filePath}`, {
     headers: { Authorization: `Bearer ${GITHUB_TOKEN}`, Accept: 'application/vnd.github+json' }
   });
-  return await res.json();
+  return res.json();
 }
 
 async function githubPush(filePath, content, message) {
   const existing = await githubGetFile(filePath).catch(() => null);
-  const sha = existing && existing.sha ? existing.sha : undefined;
-  const body = {
-    message,
-    content: Buffer.from(content).toString('base64'),
-    ...(sha ? { sha } : {})
-  };
+  const sha = existing?.sha;
   const res = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/${filePath}`, {
     method: 'PUT',
-    headers: {
-      Authorization: `Bearer ${GITHUB_TOKEN}`,
-      Accept: 'application/vnd.github+json',
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(body)
+    headers: { Authorization: `Bearer ${GITHUB_TOKEN}`, Accept: 'application/vnd.github+json', 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message, content: Buffer.from(content).toString('base64'), ...(sha ? { sha } : {}) })
   });
   const data = await res.json();
   if (!data.content) throw new Error(data.message || 'GitHub push échoué');
@@ -77,10 +86,10 @@ async function githubPush(filePath, content, message) {
 }
 
 async function saveConfig() {
-  await githubPush('config.json', JSON.stringify(config, null, 2), 'chore: mise à jour config depuis dashboard');
+  await githubPush('config.json', JSON.stringify(config, null, 2), 'chore: update config depuis dashboard');
 }
 
-// --- Auth middleware pour le dashboard ---
+// ─── Auth dashboard ───────────────────────────────────────────────────────────
 function dashboardAuth(req, res, next) {
   if (!DASHBOARD_PASSWORD) return next();
   const pwd = req.headers['x-dashboard-password'] || req.query.pwd;
@@ -88,81 +97,83 @@ function dashboardAuth(req, res, next) {
   next();
 }
 
-// --- Routes Stremio ---
+// ─── Routes Stremio ───────────────────────────────────────────────────────────
 app.get('/', (req, res) => res.redirect('/manifest.json'));
 app.get('/manifest.json', (req, res) => res.json(manifest));
-app.get('/healthz', (req, res) => {
-  res.json({ status: 'ok', providers: Object.keys(providers).filter(n => config.providers[n]?.enabled !== false) });
-});
+app.get('/healthz', (req, res) => res.json({
+  status: 'ok',
+  providers: Object.keys(providers).filter(n => config.providers[n]?.enabled !== false),
+  cache: { tmdb: tmdbCache.size, streams: streamCache.size }
+}));
 
-// --- Dashboard HTML ---
-app.get('/dashboard', (req, res) => {
-  res.sendFile(path.join(__dirname, 'dashboard.html'));
-});
+// ─── Dashboard ────────────────────────────────────────────────────────────────
+app.get('/dashboard', (req, res) => res.sendFile(path.join(__dirname, 'dashboard.html')));
 
-// --- API Dashboard ---
-
-// Statut de tous les providers
 app.get('/api/dashboard/status', dashboardAuth, (req, res) => {
   const status = {};
-  for (const name of Object.keys(providers)) {
+  for (const name of Object.keys(providers))
     status[name] = { enabled: config.providers[name]?.enabled !== false };
-  }
-  // Providers dans config mais pas encore chargés (ajoutés, en attente de redéploiement)
-  for (const name of Object.keys(config.providers)) {
+  for (const name of Object.keys(config.providers))
     if (!status[name]) status[name] = { enabled: config.providers[name]?.enabled !== false, pending: true };
-  }
   res.json({ providers: status, hasGithub: !!GITHUB_TOKEN, passwordRequired: !!DASHBOARD_PASSWORD });
 });
 
-// Toggle activer/désactiver un provider
 app.post('/api/dashboard/toggle/:name', dashboardAuth, async (req, res) => {
   const { name } = req.params;
   if (!providers[name] && !config.providers[name]) return res.status(404).json({ error: 'Provider introuvable' });
   if (!config.providers[name]) config.providers[name] = {};
   config.providers[name].enabled = !(config.providers[name].enabled !== false);
-  const enabled = config.providers[name].enabled;
-  res.json({ name, enabled });
-  saveConfig().catch(e => console.error('[Config] Sauvegarde échouée:', e.message));
+  res.json({ name, enabled: config.providers[name].enabled });
+  streamCache.clear(); // invalider le cache quand on change les providers
+  saveConfig().catch(e => console.error('[Config]', e.message));
 });
 
-// Ajouter ou remplacer un provider depuis une URL
 app.post('/api/dashboard/provider/add', dashboardAuth, async (req, res) => {
   const { url, name } = req.body;
   if (!url) return res.status(400).json({ error: 'URL requise' });
-  if (!GITHUB_TOKEN) return res.status(500).json({ error: 'GITHUB_TOKEN non configuré sur Render' });
-
+  if (!GITHUB_TOKEN) return res.status(500).json({ error: 'GITHUB_TOKEN non configuré' });
   try {
     const resp = await fetch(url, { signal: AbortSignal.timeout(15000) });
-    if (!resp.ok) throw new Error(`HTTP ${resp.status} lors du téléchargement`);
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     const code = await resp.text();
     if (!code || code.length < 10) throw new Error('Fichier vide ou invalide');
-
-    const providerName = (name || url.split('/').pop().replace(/\.js$/i, '')).replace(/[^a-z0-9_-]/gi, '_');
-    await githubPush(`providers/${providerName}.js`, code, `feat: add/update provider "${providerName}" via dashboard`);
-
-    if (!config.providers[providerName]) config.providers[providerName] = { enabled: true };
+    const pName = (name || url.split('/').pop().replace(/\.js$/i, '')).replace(/[^a-z0-9_-]/gi, '_');
+    await githubPush(`providers/${pName}.js`, code, `feat: add/update provider "${pName}" via dashboard`);
+    if (!config.providers[pName]) config.providers[pName] = { enabled: true };
     await saveConfig();
-
-    res.json({ success: true, name: providerName, message: `Provider "${providerName}" ajouté. Redéploiement Render en cours (~2 min).` });
+    res.json({ success: true, name: pName, message: `Provider "${pName}" ajouté. Redéploiement en cours (~2 min).` });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
 });
 
-// --- Stremio stream endpoint ---
+// ─── TMDB lookup (avec cache) ─────────────────────────────────────────────────
 const TMDB_KEY = '8265bd1679663a7ea12ac168da84d2e8';
 
 async function getTmdbId(imdbId, mediaType) {
+  const key = `${mediaType}:${imdbId}`;
+  const cached = tmdbCache.get(key);
+  if (cached && Date.now() - cached.ts < TMDB_CACHE_TTL) {
+    console.log(`[TMDB] Cache hit: ${imdbId} → ${cached.id}`);
+    return cached.id;
+  }
   try {
-    const resp = await fetch(`https://api.themoviedb.org/3/find/${imdbId}?api_key=${TMDB_KEY}&external_source=imdb_id`);
+    const resp = await withTimeout(
+      fetch(`https://api.themoviedb.org/3/find/${imdbId}?api_key=${TMDB_KEY}&external_source=imdb_id`),
+      5000, 'TMDB'
+    );
     const data = await resp.json();
     const results = mediaType === 'movie' ? data.movie_results : data.tv_results;
-    if (results && results.length > 0) return String(results[0].id);
+    if (results && results.length > 0) {
+      const id = String(results[0].id);
+      tmdbCache.set(key, { id, ts: Date.now() });
+      return id;
+    }
   } catch (e) { console.error('[TMDB]', e.message); }
   return null;
 }
 
+// ─── Stream endpoint (avec cache + timeout par provider) ──────────────────────
 app.get('/stream/:type/:id.json', async (req, res) => {
   const { type, id } = req.params;
   const parts = id.split(':');
@@ -179,27 +190,55 @@ app.get('/stream/:type/:id.json', async (req, res) => {
     if (!tmdbId) { console.warn('[Stream] TMDB lookup échoué pour', imdbId); return res.json({ streams: [] }); }
   }
 
+  // Cache des résultats
+  const cacheKey = `${mediaType}:${tmdbId}:${season}:${episode}`;
+  const cached = streamCache.get(cacheKey);
+  if (cached && Date.now() - cached.ts < STREAM_CACHE_TTL) {
+    console.log(`[Stream] Cache hit: ${cacheKey} (${cached.streams.length} streams)`);
+    return res.json({ streams: cached.streams });
+  }
+
   console.log(`[Stream] ${mediaType} tmdb=${tmdbId} S${season}E${episode}`);
+  const t0 = Date.now();
+
   const active = Object.entries(providers).filter(([n]) => config.providers[n]?.enabled !== false);
+
   const results = await Promise.allSettled(
-    active.map(([n, p]) =>
-      Promise.resolve().then(() => p.getStreams(tmdbId, mediaType, season, episode))
-        .then(s => { console.log(`[${n}] ${s.length} stream(s)`); return s; })
-        .catch(e => { console.error(`[${n}]`, e.message); return []; })
-    )
+    active.map(([name, p]) => {
+      const pt = Date.now();
+      return withTimeout(
+        Promise.resolve().then(() => p.getStreams(tmdbId, mediaType, season, episode)),
+        PROVIDER_TIMEOUT_MS,
+        name
+      ).then(streams => {
+        console.log(`[${name}] ${streams.length} stream(s) en ${Date.now() - pt}ms`);
+        return streams;
+      }).catch(err => {
+        console.warn(`[${name}] ${err.message} (${Date.now() - pt}ms)`);
+        return [];
+      });
+    })
   );
-  res.json({ streams: results.flatMap(r => r.status === 'fulfilled' ? r.value : []) });
+
+  const streams = results.flatMap(r => r.status === 'fulfilled' ? r.value : []);
+  console.log(`[Stream] Total: ${streams.length} streams en ${Date.now() - t0}ms`);
+
+  // Mettre en cache si on a des résultats
+  if (streams.length > 0) streamCache.set(cacheKey, { streams, ts: Date.now() });
+
+  res.json({ streams });
 });
 
-// --- Démarrage ---
+// ─── Keep-alive ────────────────────────────────────────────────────────────────
 app.listen(PORT, () => {
-  console.log(`[Server] Port ${PORT}`);
+  console.log(`[Server] Port ${PORT} | ${Object.keys(providers).length} providers chargés`);
+
   if (process.env.NODE_ENV === 'production' && process.env.RENDER_EXTERNAL_URL) {
     const pingUrl = process.env.RENDER_EXTERNAL_URL.replace(/\/$/, '') + '/healthz';
-    console.log(`[Keep-alive] → ${pingUrl}`);
+    console.log(`[Keep-alive] → ${pingUrl} toutes les 10 min`);
     setInterval(async () => {
       try { const r = await fetch(pingUrl, { signal: AbortSignal.timeout(10000) }); console.log(`[Keep-alive] OK ${r.status}`); }
-      catch (e) { console.warn('[Keep-alive] Échec:', e.message); }
+      catch (e) { console.warn('[Keep-alive]', e.message); }
     }, 10 * 60 * 1000);
   }
 });
