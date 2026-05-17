@@ -3,7 +3,7 @@
 // Version : 4.1.0
 // =============================================================
 
-var DOMAINS_URL = 'https://raw.githubusercontent.com/wooodyhood/nuvio-repo/main/domains.json';
+var DOMAINS_URL = 'https://raw.githubusercontent.com/Snixi92/nuvio-french-providers/main/domains.json';
 var PURSTREAM_FALLBACK = 'cx';
 var PURSTREAM_API = 'https://api.purstream.' + PURSTREAM_FALLBACK + '/api/v1';
 var PURSTREAM_REFERER = 'https://purstream.' + PURSTREAM_FALLBACK + '/';
