@@ -5,8 +5,8 @@
 
 var TMDB_KEY = 'f3d757824f08ea2cff45eb8f47ca3a1e';
 var NAKIOS_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
-var DOMAINS_URL = 'https://raw.githubusercontent.com/wooodyhood/nuvio-repo/main/domains.json';
-var NAKIOS_FALLBACK = 'fit';
+var DOMAINS_URL = 'https://raw.githubusercontent.com/Snixi92/nuvio-french-providers/main/domains.json';
+var NAKIOS_FALLBACK = 'ink';
 
 var _cachedEndpoint = null;
 
