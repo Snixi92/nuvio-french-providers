@@ -303,7 +303,7 @@
           <div class="stat-label">Providers total</div>
         </div>
         <div class="stat-card">
-          <div class="stat-value">✓</div>
+          <div class="stat-value">•</div>
           <div class="stat-label">Filtrage liens morts</div>
         </div>
         <div class="stat-card">
@@ -326,7 +326,7 @@
       </div>
       <div class="add-card">
         <div class="add-card-header">
-          <div class="icon-box">📥</div>
+          <div class="icon-box">••</div>
           <h3>Installer ou mettre à jour un provider</h3>
         </div>
         <div class="form-row">
@@ -351,7 +351,7 @@
   <div class="modal-overlay" id="update-modal">
     <div class="modal">
       <div class="modal-header">
-        <span class="icon">🔄</span>
+        <span class="icon">••</span>
         <h3>Mettre à jour le provider</h3>
       </div>
       <p id="update-modal-desc">Entrez l'URL du nouveau fichier .js pour remplacer ce provider.</p>
@@ -374,42 +374,14 @@
   <script>
   // ── Provider metadata ──────────────────────────────────────────
   const PROVIDERS_META = {
-    frenchstream: {
-      logo: 'https://www.frenchstream.fi/wp-content/uploads/2023/08/cropped-frenstream-e1692182083748.webp',
-      fallback: '🇫🇷',
-      desc: 'Films & séries en VF français'
-    },
-    movix: {
-      logo: null,
-      fallback: '🎬',
-      desc: 'Multi-sources HD — VF / VOSTFR'
-    },
-    nakastream: {
-      logo: null,
-      fallback: '🌊',
-      desc: 'VF · VOSTFR · MULTI — M3U8 HD'
-    },
-    nakios: {
-      logo: null,
-      fallback: '🎭',
-      desc: 'VF · VOSTFR · MULTI — 1080p / 4K'
-    },
-    purstream: {
-      logo: null,
-      fallback: '💧',
-      desc: 'Streaming haute qualité — 4K / 1080p'
-    },
-    toflix: {
-      logo: null,
-      fallback: '📺',
-      desc: 'FastFlux + Zeus SSE — VF'
-    },
-    vstream: {
-      logo: null,
-      fallback: '▶️',
-      desc: 'VF · VOSTFR · MULTI — HD'
-    }
-  };
+    frenchstream: { logo: 'FS', fallback: '•', desc: 'Films & séries en VF' },
+    movix: { logo: 'MX', fallback: '•', desc: 'Multi-sources HD — VF / VOSTFR' },
+    nakastream: { logo: 'NS', fallback: '•', desc: 'VF · VOSTFR · MULTI — M3U8 HD' },
+    nakios: { logo: 'NK', fallback: '•', desc: 'VF · VOSTFR · MULTI — 1080p / 4K' },
+    purstream: { logo: 'PS', fallback: '•', desc: 'Streaming haute qualité — 4K / 1080p' },
+    toflix: { logo: 'TF', fallback: '•', desc: 'FastFlux + Zeus SSE — VF' },
+    vstream: { logo: 'VS', fallback: '•', desc: 'VF · VOSTFR · MULTI — HD' }
+    };
 
   // ── SVG Icons ──────────────────────────────────────────────────
   const ICON_REFRESH = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12a9 9 0 1 1-6.219-8.56"/><polyline points="21 3 21 9 15 9"/></svg>`;
@@ -427,7 +399,7 @@
 
   function toast(msg, type = 'success') {
     const el = document.getElementById('toast');
-    const icons = { success: '✓', error: '✕', info: 'ℹ' };
+    const icons = { success: '•', error: '•', info: '•' };
     document.getElementById('toast-icon').textContent = icons[type] || '•';
     document.getElementById('toast-msg').textContent = msg;
     el.className = 'show ' + type;
@@ -441,7 +413,7 @@
     for (const [name, info] of Object.entries(providers)) {
       const enabled = info.enabled;
       const pending = info.pending;
-      const meta = PROVIDERS_META[name] || { fallback: '🔌', desc: 'Provider externe' };
+      const meta = PROVIDERS_META[name] || { fallback: '•', desc: 'Provider externe' };
       const displayName = name.charAt(0).toUpperCase() + name.slice(1);
       const card = document.createElement('div');
       card.className = 'provider-card ' + (enabled ? 'enabled' : 'disabled');
@@ -542,7 +514,7 @@
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Erreur');
-      toast('✓ ' + data.message, 'success');
+      toast('• ' + data.message, 'success');
       closeModal();
       setTimeout(load, 1000);
     } catch (e) { toast('Erreur : ' + e.message, 'error'); }
@@ -566,7 +538,7 @@
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Erreur');
-      toast('✓ ' + data.message, 'success');
+      toast('• ' + data.message, 'success');
       document.getElementById('add-url').value = '';
       document.getElementById('add-name').value = '';
       setTimeout(load, 1000);
