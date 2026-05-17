@@ -185,6 +185,95 @@
   }
   .toggle input:checked + .tslider::before{transform:translateX(20px);background:#fff}
 
+  /* ── TEST PANEL ───────────────────────────────────────────── */
+  .test-overlay{
+    display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);
+    z-index:60;align-items:flex-end;justify-content:center;padding:0;
+    backdrop-filter:blur(8px);
+  }
+  .test-overlay.open{display:flex}
+  .test-panel{
+    background:var(--surface);border:1px solid var(--b2);
+    border-radius:var(--r) var(--r) 0 0;
+    width:100%;max-width:760px;max-height:88vh;
+    display:flex;flex-direction:column;
+    box-shadow:0 -20px 60px rgba(0,0,0,.6);
+    animation:slideUp .22s ease;
+  }
+  .test-panel-head{
+    display:flex;align-items:center;gap:12px;
+    padding:20px 24px 16px;border-bottom:1px solid var(--border);
+    flex-shrink:0;
+  }
+  .test-panel-head h3{font-size:15px;font-weight:700;flex:1}
+  .test-panel-head p{font-size:12px;color:var(--muted);margin-top:2px}
+  .test-controls{
+    display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+    padding:14px 24px;border-bottom:1px solid var(--border);flex-shrink:0;
+  }
+  .test-mode-btn{
+    padding:7px 14px;border-radius:8px;border:1.5px solid var(--border);
+    background:var(--s2);color:var(--muted);font-size:12px;font-weight:600;
+    cursor:pointer;font-family:inherit;transition:all .2s;
+  }
+  .test-mode-btn.active{background:var(--ag);border-color:var(--accent);color:var(--accent)}
+  .test-ep-inputs{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
+  .test-ep-inputs input{
+    width:48px;padding:6px 8px;border-radius:7px;
+    border:1.5px solid var(--border);background:var(--s2);color:var(--text);
+    font-size:12px;font-family:inherit;outline:none;text-align:center;
+    transition:border-color .2s;
+  }
+  .test-ep-inputs input:focus{border-color:var(--accent)}
+  .btn-run-test{
+    margin-left:auto;background:var(--accent);color:#fff;border:none;
+    border-radius:9px;padding:9px 20px;font-size:13px;font-weight:700;
+    cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px;
+    transition:opacity .2s,transform .15s;white-space:nowrap;
+  }
+  .btn-run-test:hover{opacity:.88;transform:translateY(-1px)}
+  .btn-run-test:disabled{opacity:.45;cursor:not-allowed;transform:none}
+  .test-body{flex:1;overflow-y:auto;padding:16px 24px 24px}
+  .test-empty{
+    text-align:center;color:var(--muted);padding:40px 0;font-size:13px;line-height:2;
+  }
+  .test-result-meta{
+    display:flex;align-items:center;gap:12px;margin-bottom:14px;
+    padding:10px 14px;background:var(--s2);border-radius:10px;flex-wrap:wrap;
+  }
+  .test-result-meta .trm-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+  .test-result-meta .trm-val{font-size:13px;font-weight:600}
+  .trm-val.ok{color:var(--green)}
+  .trm-val.err{color:var(--red)}
+  .stream-list{display:flex;flex-direction:column;gap:8px}
+  .stream-item{
+    background:var(--s2);border:1px solid var(--border);border-radius:10px;
+    padding:12px 14px;
+  }
+  .stream-item:hover{border-color:var(--b2)}
+  .stream-top{display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap}
+  .stream-badge{
+    padding:2px 8px;border-radius:5px;font-size:10.5px;font-weight:700;
+    letter-spacing:.03em;white-space:nowrap;
+  }
+  .stream-badge.q4k{background:rgba(108,99,255,.2);color:#a78bfa;border:1px solid rgba(108,99,255,.3)}
+  .stream-badge.q1080{background:rgba(34,211,165,.15);color:var(--green);border:1px solid rgba(34,211,165,.25)}
+  .stream-badge.q720{background:rgba(246,173,85,.12);color:var(--yellow);border:1px solid rgba(246,173,85,.2)}
+  .stream-badge.qhd{background:rgba(255,255,255,.06);color:var(--muted);border:1px solid rgba(255,255,255,.08)}
+  .stream-badge.lang{background:rgba(255,255,255,.05);color:var(--muted);border:1px solid rgba(255,255,255,.07)}
+  .stream-badge.fmt{background:rgba(255,255,255,.04);color:var(--muted2);border:1px solid rgba(255,255,255,.06)}
+  .stream-name{font-size:12.5px;font-weight:600;color:var(--text)}
+  .stream-url{
+    font-size:10.5px;font-family:monospace;color:var(--muted);
+    word-break:break-all;line-height:1.5;
+  }
+  .stream-url a{color:var(--accent);text-decoration:none}
+  .stream-url a:hover{text-decoration:underline}
+  .test-error{
+    background:rgba(245,101,101,.08);border:1px solid rgba(245,101,101,.25);
+    border-radius:10px;padding:14px 18px;color:var(--red);font-size:13px;
+  }
+
   /* ── ADD PANEL ────────────────────────────────────────────── */
   .add-panel{
     background:var(--surface);border:1px dashed var(--b2);
@@ -371,6 +460,39 @@
 
   </main>
 
+  <!-- TEST PANEL -->
+  <div class="test-overlay" id="test-overlay" onclick="if(event.target===this)closeTestPanel()">
+    <div class="test-panel">
+      <div class="test-panel-head">
+        <div>
+          <h3 id="test-panel-title">Tester le provider</h3>
+          <p id="test-panel-sub">Lancement d'une recherche réelle sur votre serveur</p>
+        </div>
+        <button onclick="closeTestPanel()" style="background:none;border:none;cursor:pointer;color:var(--muted);padding:4px">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="test-controls">
+        <button class="test-mode-btn active" id="btn-mode-movie" onclick="setTestMode('movie')">🎬 Film — Inception</button>
+        <button class="test-mode-btn" id="btn-mode-tv" onclick="setTestMode('tv')">📺 Série — Breaking Bad</button>
+        <div class="test-ep-inputs" id="test-ep-inputs" style="display:none">
+          <span>S</span><input type="number" id="test-season" value="1" min="1" max="99">
+          <span>E</span><input type="number" id="test-episode" value="1" min="1" max="99">
+        </div>
+        <button class="btn-run-test" id="btn-run-test" onclick="runTest()">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          Lancer le test
+        </button>
+      </div>
+      <div class="test-body" id="test-body">
+        <div class="test-empty">
+          Sélectionnez le mode et cliquez sur <strong>Lancer le test</strong>.<br>
+          Le serveur fera une vraie recherche et affichera les liens trouvés.
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- UPDATE MODAL -->
   <div class="overlay" id="modal" onclick="if(event.target===this)closeModal()">
     <div class="modal">
@@ -496,10 +618,8 @@
   // ── BUILD LOGO HTML ─────────────────────────────────────────────
   function logoHtml(name, m) {
     if (m.logo) {
-      // Real logo image with letter-mark fallback
-      const esc = m.abbr.replace(/'/g,"\'");
       return '<img src="'+m.logo+'" alt="'+name+'" '+
-        'onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">' +
+        'onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">' +
         '<span class="plogo-letter" style="display:none;--pcolor1:'+m.c1+';--pcolor2:'+m.c2+'">'+m.abbr+'</span>';
     }
     return '<span class="plogo-letter" style="--pcolor1:'+m.c1+';--pcolor2:'+m.c2+'">'+m.abbr+'</span>';
@@ -560,11 +680,15 @@
           statusBadge+
         '</div>'+
         '<div class="pactions">'+
-          '<button class="btn-upd" onclick="openModal(''+name+'')" title="Mettre à jour">'+
+          '<button class="btn-upd" onclick="openTestPanel(\''+name+'\')" title="Tester ce provider" style="color:var(--green);border-color:rgba(34,211,165,.3)">'+
+            '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>'+
+            '<span> Tester</span>'+
+          '</button>'+
+          '<button class="btn-upd" onclick="openModal(\''+name+'\')" title="Mettre à jour">'+
             SVG.refresh+'<span> Mettre à jour</span>'+
           '</button>'+
           '<label class="toggle" title="'+(on?'Désactiver':'Activer')+'">'+
-            '<input type="checkbox" '+(on?'checked':'')+' onchange="doToggle(''+name+'',this)">'+
+            '<input type="checkbox" '+(on?'checked':'')+' onchange="doToggle(\''+name+'\',this)">'+
             '<span class="tslider" style="--pcolor:'+m.color+'"></span>'+
           '</label>'+
         '</div>';
@@ -696,6 +820,138 @@
   }
 
   load();
+
+  // ── TEST PANEL ───────────────────────────────────────────────────
+  let _testProvider = null;
+  let _testMode = 'movie';
+
+  function openTestPanel(name) {
+    _testProvider = name;
+    const m = PM[name] || { name: name.charAt(0).toUpperCase() + name.slice(1) };
+    document.getElementById('test-panel-title').textContent = 'Tester : ' + m.name;
+    document.getElementById('test-panel-sub').textContent = 'Recherche réelle sur le serveur — résultats en temps réel';
+    document.getElementById('test-body').innerHTML =
+      '<div class="test-empty">Sélectionnez le mode et cliquez sur <strong>Lancer le test</strong>.<br>Le serveur fera une vraie recherche et affichera les liens trouvés.</div>';
+    setTestMode('movie');
+    document.getElementById('test-overlay').classList.add('open');
+  }
+
+  function closeTestPanel() {
+    document.getElementById('test-overlay').classList.remove('open');
+    _testProvider = null;
+  }
+
+  function setTestMode(mode) {
+    _testMode = mode;
+    document.getElementById('btn-mode-movie').classList.toggle('active', mode === 'movie');
+    document.getElementById('btn-mode-tv').classList.toggle('active', mode === 'tv');
+    document.getElementById('test-ep-inputs').style.display = mode === 'tv' ? 'flex' : 'none';
+  }
+
+  function qualityBadge(q) {
+    if (!q) return '';
+    const l = (q || '').toLowerCase();
+    let cls = 'qhd';
+    if (l.includes('4k') || l.includes('2160')) cls = 'q4k';
+    else if (l.includes('1080')) cls = 'q1080';
+    else if (l.includes('720')) cls = 'q720';
+    return '<span class="stream-badge ' + cls + '">' + q + '</span>';
+  }
+
+  function langBadge(name, url) {
+    const n = (name || '').toUpperCase();
+    const u = (url || '').toLowerCase();
+    let lang = 'VF';
+    if (n.includes('MULTI')) lang = 'MULTI';
+    else if (n.includes('VOSTFR') || n.includes('VOST')) lang = 'VOSTFR';
+    else if (n.includes('PREMIUM') || u.includes('premium')) lang = 'MULTI';
+    return '<span class="stream-badge lang">' + lang + '</span>';
+  }
+
+  function fmtBadge(url) {
+    const fmt = url && url.match(/\.mp4/i) ? 'MP4' : 'M3U8';
+    return '<span class="stream-badge fmt">' + fmt + '</span>';
+  }
+
+  function qualityFromStream(s) {
+    const q = (s.quality || '').toUpperCase();
+    const n = (s.name || '').toUpperCase();
+    if (q) return q;
+    if (n.includes('4K') || n.includes('2160')) return '4K';
+    if (n.includes('1080')) return '1080p';
+    if (n.includes('720')) return '720p';
+    if ((s.url || '').includes('premium')) return '1080p';
+    if ((s.url || '').includes('free')) return '720p';
+    return 'HD';
+  }
+
+  async function runTest() {
+    if (!_testProvider) return;
+    const btn = document.getElementById('btn-run-test');
+    const body = document.getElementById('test-body');
+    const season  = parseInt(document.getElementById('test-season').value)  || 1;
+    const episode = parseInt(document.getElementById('test-episode').value) || 1;
+
+    btn.disabled = true;
+    btn.innerHTML = SVG.spin + ' Recherche en cours…';
+    body.innerHTML = '<div class="test-empty"><span class="spin" style="display:inline-block;margin-right:8px">⟳</span>Interrogation du provider sur le serveur…<br><small style="color:var(--muted2)">Peut prendre jusqu\'à 20 secondes</small></div>';
+
+    const qs = _testMode === 'tv' ? '?mode=tv&season=' + season + '&episode=' + episode : '?mode=movie';
+    const url = '/api/dashboard/test/' + _testProvider + qs;
+
+    try {
+      const res  = await fetch(url, { signal: AbortSignal.timeout(25000) });
+      const data = await res.json();
+
+      if (data.error && (!data.streams || data.streams.length === 0)) {
+        body.innerHTML = '<div class="test-error"><strong>Erreur :</strong> ' + data.error + '</div>';
+        return;
+      }
+
+      const streams = data.streams || [];
+      const elapsed = data.elapsed ? (data.elapsed / 1000).toFixed(2) + 's' : '—';
+      const countClass = streams.length > 0 ? 'ok' : 'err';
+
+      let html = '<div class="test-result-meta">';
+      html += '<span class="trm-label">Recherche</span><span class="trm-val">' + (data.test || '—') + '</span>';
+      html += '<span class="trm-label" style="margin-left:8px">Durée</span><span class="trm-val">' + elapsed + '</span>';
+      html += '<span class="trm-label" style="margin-left:8px">Sources trouvées</span><span class="trm-val ' + countClass + '">' + streams.length + '</span>';
+      html += '</div>';
+
+      if (streams.length === 0) {
+        html += '<div class="test-empty" style="padding:24px 0">Aucun flux trouvé.<br><small style="color:var(--muted2)">Le provider ne retourne pas de résultat pour ce test.</small></div>';
+      } else {
+        html += '<div class="stream-list">';
+        streams.forEach(function(s, i) {
+          const q = qualityFromStream(s);
+          html += '<div class="stream-item">';
+          html += '<div class="stream-top">';
+          html += '<span class="stream-name">#' + (i + 1) + ' ' + (s.name || 'Stream') + '</span>';
+          html += qualityBadge(q);
+          html += langBadge(s.name, s.url);
+          if (s.url) html += fmtBadge(s.url);
+          html += '</div>';
+          if (s.url) {
+            html += '<div class="stream-url"><a href="' + s.url + '" target="_blank" rel="noopener">' + s.url + '</a></div>';
+          }
+          html += '</div>';
+        });
+        html += '</div>';
+      }
+
+      body.innerHTML = html;
+    } catch (e) {
+      body.innerHTML = '<div class="test-error"><strong>Erreur réseau :</strong> ' + e.message + '</div>';
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg> Relancer';
+    }
+  }
+
+  // Fermer le panel avec Échap
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') { closeTestPanel(); closeModal(); }
+  });
   </script>
   </body>
   </html>
