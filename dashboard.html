@@ -1,389 +1,623 @@
 <!DOCTYPE html>
-<html lang="fr">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Nuvio Dashboard</title>
-<style>
-  :root {
-    --bg: #0f1117;
-    --surface: #1a1d27;
-    --surface2: #222636;
-    --border: #2d3148;
-    --accent: #6c63ff;
-    --accent2: #4ade80;
-    --danger: #f87171;
-    --text: #e2e8f0;
-    --text2: #94a3b8;
-    --radius: 14px;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; min-height: 100vh; }
-
-  header {
-    background: linear-gradient(135deg, #1a1d27 0%, #16192a 100%);
-    border-bottom: 1px solid var(--border);
-    padding: 20px 28px;
-    display: flex; align-items: center; gap: 14px;
-  }
-  header .logo { font-size: 26px; }
-  header h1 { font-size: 20px; font-weight: 700; }
-  header p { font-size: 13px; color: var(--text2); margin-top: 2px; }
-  .badge {
-    margin-left: auto; background: var(--accent2); color: #000;
-    font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 20px;
-  }
-  .badge.offline { background: var(--danger); color: #fff; }
-
-  main { max-width: 820px; margin: 0 auto; padding: 28px 16px; }
-
-  /* Password screen */
-  #login-screen {
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    min-height: 60vh; gap: 16px;
-  }
-  #login-screen h2 { font-size: 18px; color: var(--text2); }
-  #login-screen input {
-    width: 280px; padding: 12px 16px; border-radius: var(--radius);
-    border: 1px solid var(--border); background: var(--surface2); color: var(--text);
-    font-size: 15px; outline: none;
-  }
-  #login-screen input:focus { border-color: var(--accent); }
-
-  .section-title {
-    font-size: 13px; font-weight: 600; letter-spacing: .08em;
-    text-transform: uppercase; color: var(--text2); margin-bottom: 14px;
-  }
-
-  /* Provider cards */
-  .providers-grid { display: grid; gap: 12px; margin-bottom: 36px; }
-  .provider-card {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius); padding: 18px 20px;
-    display: flex; align-items: center; gap: 14px;
-    transition: border-color .2s;
-  }
-  .provider-card.disabled { opacity: .55; }
-  .provider-card:hover { border-color: var(--accent); }
-  .provider-icon {
-    width: 42px; height: 42px; border-radius: 10px;
-    background: var(--surface2); display: flex; align-items: center; justify-content: center;
-    font-size: 20px; flex-shrink: 0;
-  }
-  .provider-info { flex: 1; }
-  .provider-name { font-weight: 600; font-size: 15px; }
-  .provider-status { font-size: 12px; color: var(--text2); margin-top: 3px; }
-  .provider-status.on { color: var(--accent2); }
-  .provider-status.pending { color: #f59e0b; }
-
-  .provider-actions { display: flex; align-items: center; gap: 10px; }
-
-  /* Toggle switch */
-  .toggle { position: relative; width: 48px; height: 26px; cursor: pointer; }
-  .toggle input { opacity: 0; width: 0; height: 0; }
-  .slider {
-    position: absolute; inset: 0; background: var(--border); border-radius: 26px;
-    transition: .3s;
-  }
-  .slider:before {
-    content: ''; position: absolute; left: 3px; top: 3px;
-    width: 20px; height: 20px; border-radius: 50%; background: white; transition: .3s;
-  }
-  .toggle input:checked + .slider { background: var(--accent); }
-  .toggle input:checked + .slider:before { transform: translateX(22px); }
-
-  /* Update button */
-  .btn-update {
-    background: var(--surface2); border: 1px solid var(--border);
-    color: var(--text2); font-size: 12px; padding: 6px 12px; border-radius: 8px;
-    cursor: pointer; transition: all .2s; white-space: nowrap;
-  }
-  .btn-update:hover { border-color: var(--accent); color: var(--accent); }
-
-  /* Add provider form */
-  .add-card {
-    background: var(--surface); border: 1px dashed var(--border);
-    border-radius: var(--radius); padding: 22px;
-  }
-  .add-card h3 { font-size: 15px; font-weight: 600; margin-bottom: 16px; }
-  .form-row { display: flex; gap: 10px; flex-wrap: wrap; }
-  .form-row input {
-    flex: 1; min-width: 200px; padding: 11px 14px; border-radius: 10px;
-    border: 1px solid var(--border); background: var(--surface2); color: var(--text);
-    font-size: 14px; outline: none;
-  }
-  .form-row input:focus { border-color: var(--accent); }
-  .btn-primary {
-    background: var(--accent); color: #fff; border: none; padding: 11px 20px;
-    border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer;
-    transition: opacity .2s; white-space: nowrap;
-  }
-  .btn-primary:hover { opacity: .85; }
-  .btn-primary:disabled { opacity: .4; cursor: not-allowed; }
-  .form-hint { font-size: 12px; color: var(--text2); margin-top: 10px; }
-
-  /* Toast */
-  #toast {
-    position: fixed; bottom: 24px; right: 24px; left: 24px; max-width: 380px;
-    margin: 0 auto; background: var(--surface2); border: 1px solid var(--border);
-    border-radius: 12px; padding: 14px 18px; font-size: 14px;
-    box-shadow: 0 8px 32px rgba(0,0,0,.4); opacity: 0; transition: opacity .3s;
-    pointer-events: none; z-index: 100;
-  }
-  #toast.show { opacity: 1; }
-  #toast.success { border-color: var(--accent2); color: var(--accent2); }
-  #toast.error { border-color: var(--danger); color: var(--danger); }
-
-  /* Modal */
-  .modal-overlay {
-    display: none; position: fixed; inset: 0; background: rgba(0,0,0,.6);
-    z-index: 50; align-items: center; justify-content: center; padding: 16px;
-  }
-  .modal-overlay.open { display: flex; }
-  .modal {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius); padding: 24px; width: 100%; max-width: 460px;
-  }
-  .modal h3 { font-size: 16px; margin-bottom: 6px; }
-  .modal p { font-size: 13px; color: var(--text2); margin-bottom: 18px; }
-  .modal input {
-    width: 100%; padding: 11px 14px; border-radius: 10px;
-    border: 1px solid var(--border); background: var(--surface2); color: var(--text);
-    font-size: 14px; outline: none; margin-bottom: 14px;
-  }
-  .modal input:focus { border-color: var(--accent); }
-  .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
-  .btn-cancel {
-    background: var(--surface2); border: 1px solid var(--border); color: var(--text2);
-    padding: 10px 18px; border-radius: 10px; cursor: pointer; font-size: 14px;
-  }
-
-  .spinner { animation: spin 1s linear infinite; display: inline-block; }
-  @keyframes spin { to { transform: rotate(360deg); } }
-
-  @media (max-width: 500px) {
-    header { flex-wrap: wrap; }
-    .form-row { flex-direction: column; }
-  }
-</style>
-</head>
-<body>
-
-<header>
-  <div class="logo">🎬</div>
-  <div>
-    <h1>Nuvio Dashboard</h1>
-    <p>Gestion des providers francophones</p>
-  </div>
-  <div class="badge" id="status-badge">Chargement...</div>
-</header>
-
-<main>
-
-  <!-- Login screen -->
-  <div id="login-screen" style="display:none">
-    <h2>🔒 Accès protégé</h2>
-    <input type="password" id="pwd-input" placeholder="Mot de passe" />
-    <button class="btn-primary" onclick="doLogin()">Entrer</button>
-  </div>
-
-  <!-- Dashboard content -->
-  <div id="dashboard-content" style="display:none">
-
-    <p class="section-title">Providers actifs</p>
-    <div class="providers-grid" id="providers-list">
-      <div style="color:var(--text2);font-size:14px">Chargement...</div>
-    </div>
-
-    <p class="section-title">Ajouter ou mettre à jour un provider</p>
-    <div class="add-card">
-      <h3>📥 Installer depuis une URL</h3>
-      <div class="form-row">
-        <input type="url" id="add-url" placeholder="https://exemple.com/provider.js" />
-        <input type="text" id="add-name" placeholder="Nom (optionnel)" style="max-width:160px" />
-        <button class="btn-primary" id="add-btn" onclick="addProvider()">Ajouter</button>
-      </div>
-      <p class="form-hint">
-        Le fichier .js sera ajouté à ton repo GitHub. Render redéploiera automatiquement en ~2 minutes.<br>
-        Pour <strong>mettre à jour</strong> un provider existant, donne le même nom que le provider actuel.
-      </p>
-    </div>
-
-  </div>
-</main>
-
-<!-- Modal mise à jour URL -->
-<div class="modal-overlay" id="update-modal">
-  <div class="modal">
-    <h3>🔄 Mettre à jour le provider</h3>
-    <p id="update-modal-desc">Entrez l'URL du nouveau fichier .js pour remplacer ce provider.</p>
-    <input type="url" id="update-url" placeholder="https://exemple.com/provider.js" />
-    <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeModal()">Annuler</button>
-      <button class="btn-primary" id="update-confirm-btn" onclick="confirmUpdate()">Mettre à jour</button>
-    </div>
-  </div>
-</div>
-
-<div id="toast"></div>
-
-<script>
-const PROVIDER_ICONS = { nakios:'🎭', purstream:'🌊', movix:'🎬', toflix:'📺', frenchstream:'🇫🇷' };
-let password = localStorage.getItem('dashboard_pwd') || '';
-let passwordRequired = false;
-let currentUpdateTarget = null;
-
-function headers() {
-  const h = { 'Content-Type': 'application/json' };
-  if (password) h['x-dashboard-password'] = password;
-  return h;
-}
-
-function toast(msg, type = 'success') {
-  const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.className = 'show ' + type;
-  setTimeout(() => el.className = '', 3500);
-}
-
-async function load() {
-  try {
-    const res = await fetch('/api/dashboard/status', { headers: headers() });
-    if (res.status === 401) {
-      passwordRequired = true;
-      document.getElementById('login-screen').style.display = 'flex';
-      return;
+  <html lang="fr">
+  <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nuvio Dashboard</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    :root {
+      --bg: #0b0e18;
+      --surface: #131726;
+      --surface2: #1c2035;
+      --border: #252a42;
+      --border2: #2e3454;
+      --accent: #7c6ff7;
+      --accent-glow: rgba(124,111,247,0.18);
+      --accent2: #34d399;
+      --danger: #f87171;
+      --warn: #fbbf24;
+      --text: #e4eaf4;
+      --text2: #7a8aaa;
+      --radius: 14px;
     }
-    const data = await res.json();
-    passwordRequired = data.passwordRequired;
-    document.getElementById('login-screen').style.display = 'none';
-    document.getElementById('dashboard-content').style.display = 'block';
-    renderProviders(data.providers);
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; min-height: 100vh; }
 
-    const badge = document.getElementById('status-badge');
-    const activeCount = Object.values(data.providers).filter(p => p.enabled && !p.pending).length;
-    badge.textContent = `${activeCount} provider${activeCount > 1 ? 's' : ''} actif${activeCount > 1 ? 's' : ''}`;
-    badge.className = 'badge';
-  } catch (e) {
-    document.getElementById('status-badge').textContent = 'Erreur';
-    document.getElementById('status-badge').className = 'badge offline';
-  }
-}
+    /* ── HEADER ────────────────────────────────────────────────── */
+    header {
+      background: linear-gradient(135deg, #131726 0%, #0f1220 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 18px 28px;
+      display: flex; align-items: center; gap: 16px;
+      position: sticky; top: 0; z-index: 20;
+      backdrop-filter: blur(10px);
+    }
+    .header-logo {
+      width: 40px; height: 40px; border-radius: 10px;
+      background: linear-gradient(135deg, #7c6ff7, #5b4de0);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; flex-shrink: 0;
+      box-shadow: 0 0 16px rgba(124,111,247,0.4);
+    }
+    .header-text h1 { font-size: 17px; font-weight: 700; letter-spacing: -0.3px; }
+    .header-text p { font-size: 12px; color: var(--text2); margin-top: 2px; }
+    .header-badges { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+    .badge {
+      background: rgba(52,211,153,0.12); color: var(--accent2);
+      border: 1px solid rgba(52,211,153,0.3);
+      font-size: 11px; font-weight: 600; padding: 4px 12px; border-radius: 20px;
+      display: flex; align-items: center; gap: 5px;
+    }
+    .badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--accent2); animation: pulse 2s infinite; }
+    .badge.offline { background: rgba(248,113,113,0.12); color: var(--danger); border-color: rgba(248,113,113,0.3); }
+    .badge.offline::before { background: var(--danger); animation: none; }
+    @keyframes pulse { 0%,100%{opacity:1}50%{opacity:.4} }
 
-function renderProviders(providers) {
-  const list = document.getElementById('providers-list');
-  list.innerHTML = '';
-  if (!Object.keys(providers).length) {
-    list.innerHTML = '<div style="color:var(--text2);font-size:14px">Aucun provider trouvé.</div>';
-    return;
-  }
-  for (const [name, info] of Object.entries(providers)) {
-    const enabled = info.enabled;
-    const pending = info.pending;
-    const icon = PROVIDER_ICONS[name] || '🔌';
-    const card = document.createElement('div');
-    card.className = 'provider-card' + (enabled ? '' : ' disabled');
-    card.id = 'card-' + name;
-    card.innerHTML = `
-      <div class="provider-icon">${icon}</div>
-      <div class="provider-info">
-        <div class="provider-name">${name.charAt(0).toUpperCase() + name.slice(1)}</div>
-        <div class="provider-status ${pending ? 'pending' : (enabled ? 'on' : '')}">
-          ${pending ? '⏳ En attente de redéploiement' : (enabled ? '● Actif' : '○ Désactivé')}
+    main { max-width: 860px; margin: 0 auto; padding: 28px 16px; }
+
+    /* ── LOGIN ─────────────────────────────────────────────────── */
+    #login-screen {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      min-height: 70vh; gap: 16px;
+    }
+    .login-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 36px; width: 100%; max-width: 360px;
+      text-align: center;
+    }
+    .login-card .lock-icon { font-size: 36px; margin-bottom: 12px; }
+    .login-card h2 { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+    .login-card p { font-size: 13px; color: var(--text2); margin-bottom: 20px; }
+    .login-card input {
+      width: 100%; padding: 12px 16px; border-radius: 10px;
+      border: 1px solid var(--border); background: var(--surface2); color: var(--text);
+      font-size: 14px; outline: none; margin-bottom: 12px; text-align: center;
+      font-family: inherit;
+    }
+    .login-card input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+
+    /* ── SECTION TITLES ─────────────────────────────────────────── */
+    .section-header {
+      display: flex; align-items: center; gap: 10px; margin-bottom: 16px; margin-top: 8px;
+    }
+    .section-title {
+      font-size: 11px; font-weight: 600; letter-spacing: .1em;
+      text-transform: uppercase; color: var(--text2);
+    }
+    .section-line { flex: 1; height: 1px; background: var(--border); }
+
+    /* ── PROVIDER CARDS ─────────────────────────────────────────── */
+    .providers-grid { display: grid; gap: 10px; margin-bottom: 36px; }
+    .provider-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 16px 20px;
+      display: flex; align-items: center; gap: 14px;
+      transition: border-color .2s, box-shadow .2s;
+      position: relative; overflow: hidden;
+    }
+    .provider-card::before {
+      content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+      background: var(--accent); opacity: 0; transition: opacity .2s;
+    }
+    .provider-card.enabled::before { opacity: 1; }
+    .provider-card.disabled { opacity: .5; }
+    .provider-card.disabled::before { background: var(--border2); opacity: 1; }
+    .provider-card:hover { border-color: var(--border2); box-shadow: 0 4px 20px rgba(0,0,0,.3); }
+    .provider-card.enabled:hover { border-color: var(--accent); box-shadow: 0 4px 20px var(--accent-glow); }
+
+    /* ── PROVIDER LOGO ──────────────────────────────────────────── */
+    .provider-logo {
+      width: 46px; height: 46px; border-radius: 12px;
+      background: var(--surface2); border: 1px solid var(--border2);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; overflow: hidden;
+    }
+    .provider-logo img { width: 38px; height: 38px; object-fit: contain; border-radius: 6px; }
+    .provider-logo .logo-fallback {
+      font-size: 22px; line-height: 1;
+    }
+
+    .provider-info { flex: 1; min-width: 0; }
+    .provider-name { font-weight: 600; font-size: 15px; letter-spacing: -0.2px; }
+    .provider-desc { font-size: 12px; color: var(--text2); margin-top: 3px; }
+    .provider-status {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 11px; font-weight: 500; margin-top: 5px;
+      padding: 2px 8px; border-radius: 6px;
+    }
+    .provider-status.on { background: rgba(52,211,153,0.1); color: var(--accent2); }
+    .provider-status.off { background: rgba(255,255,255,0.05); color: var(--text2); }
+    .provider-status.pending { background: rgba(251,191,36,0.1); color: var(--warn); }
+    .provider-status .dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+
+    .provider-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+    .btn-update {
+      background: var(--surface2); border: 1px solid var(--border2);
+      color: var(--text2); font-size: 12px; font-weight: 500;
+      padding: 7px 13px; border-radius: 8px;
+      cursor: pointer; transition: all .2s; white-space: nowrap;
+      display: flex; align-items: center; gap: 5px; font-family: inherit;
+    }
+    .btn-update:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-glow); }
+
+    /* ── TOGGLE ─────────────────────────────────────────────────── */
+    .toggle { position: relative; width: 44px; height: 24px; cursor: pointer; flex-shrink: 0; }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .slider {
+      position: absolute; inset: 0; background: var(--border2); border-radius: 24px; transition: .25s;
+    }
+    .slider:before {
+      content: ''; position: absolute; left: 3px; top: 3px;
+      width: 18px; height: 18px; border-radius: 50%; background: var(--text2); transition: .25s;
+    }
+    .toggle input:checked + .slider { background: var(--accent); }
+    .toggle input:checked + .slider:before { transform: translateX(20px); background: white; }
+
+    /* ── ADD PROVIDER ───────────────────────────────────────────── */
+    .add-card {
+      background: var(--surface); border: 1px dashed var(--border2);
+      border-radius: var(--radius); padding: 22px 24px;
+    }
+    .add-card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+    .add-card-header .icon-box {
+      width: 32px; height: 32px; border-radius: 8px;
+      background: var(--accent-glow); border: 1px solid rgba(124,111,247,0.3);
+      display: flex; align-items: center; justify-content: center; font-size: 15px;
+    }
+    .add-card-header h3 { font-size: 14px; font-weight: 600; }
+    .form-row { display: flex; gap: 10px; flex-wrap: wrap; }
+    .form-row input {
+      flex: 1; min-width: 200px; padding: 11px 14px; border-radius: 10px;
+      border: 1px solid var(--border); background: var(--surface2); color: var(--text);
+      font-size: 13px; outline: none; font-family: inherit;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .form-row input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+    .form-hint { font-size: 12px; color: var(--text2); margin-top: 10px; line-height: 1.6; }
+
+    /* ── BUTTONS ────────────────────────────────────────────────── */
+    .btn-primary {
+      background: var(--accent); color: #fff; border: none;
+      padding: 11px 20px; border-radius: 10px;
+      font-size: 13px; font-weight: 600; cursor: pointer;
+      transition: opacity .2s, transform .1s; white-space: nowrap;
+      font-family: inherit; display: flex; align-items: center; gap: 6px;
+    }
+    .btn-primary:hover { opacity: .9; transform: translateY(-1px); }
+    .btn-primary:active { transform: translateY(0); }
+    .btn-primary:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+
+    /* ── TOAST ──────────────────────────────────────────────────── */
+    #toast {
+      position: fixed; bottom: 24px; right: 24px; max-width: 340px;
+      background: var(--surface2); border: 1px solid var(--border2);
+      border-radius: 12px; padding: 14px 18px; font-size: 13px;
+      box-shadow: 0 8px 32px rgba(0,0,0,.5); opacity: 0; transition: opacity .3s, transform .3s;
+      pointer-events: none; z-index: 100; display: flex; align-items: center; gap: 10px;
+      transform: translateY(8px);
+    }
+    #toast.show { opacity: 1; transform: translateY(0); }
+    #toast.success { border-color: rgba(52,211,153,0.4); }
+    #toast.success .toast-icon { color: var(--accent2); }
+    #toast.error { border-color: rgba(248,113,113,0.4); }
+    #toast.error .toast-icon { color: var(--danger); }
+    .toast-icon { font-size: 16px; flex-shrink: 0; }
+
+    /* ── MODAL ──────────────────────────────────────────────────── */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,.7);
+      z-index: 50; align-items: center; justify-content: center; padding: 16px;
+      backdrop-filter: blur(4px);
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--surface); border: 1px solid var(--border2);
+      border-radius: var(--radius); padding: 28px; width: 100%; max-width: 460px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.6);
+    }
+    .modal-header { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+    .modal-header .icon { font-size: 18px; }
+    .modal h3 { font-size: 16px; font-weight: 700; }
+    .modal p { font-size: 13px; color: var(--text2); margin-bottom: 18px; margin-top: 6px; line-height: 1.5; }
+    .modal input {
+      width: 100%; padding: 12px 14px; border-radius: 10px;
+      border: 1px solid var(--border); background: var(--surface2); color: var(--text);
+      font-size: 13px; outline: none; margin-bottom: 16px; font-family: inherit;
+    }
+    .modal input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+    .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+    .btn-cancel {
+      background: var(--surface2); border: 1px solid var(--border2); color: var(--text2);
+      padding: 10px 18px; border-radius: 10px; cursor: pointer; font-size: 13px;
+      font-family: inherit; transition: border-color .2s;
+    }
+    .btn-cancel:hover { border-color: var(--border); color: var(--text); }
+
+    /* ── SPINNER ────────────────────────────────────────────────── */
+    .spinner { animation: spin 0.8s linear infinite; display: inline-block; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── STATS BAR ──────────────────────────────────────────────── */
+    .stats-bar {
+      display: flex; gap: 12px; margin-bottom: 28px; flex-wrap: wrap;
+    }
+    .stat-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 14px 18px; flex: 1; min-width: 120px;
+    }
+    .stat-card .stat-value { font-size: 22px; font-weight: 700; color: var(--text); }
+    .stat-card .stat-label { font-size: 11px; color: var(--text2); margin-top: 2px; font-weight: 500; }
+    .stat-card.highlight .stat-value { color: var(--accent); }
+
+    @media (max-width: 540px) {
+      header { padding: 14px 16px; }
+      .header-text p { display: none; }
+      main { padding: 20px 12px; }
+      .provider-card { padding: 14px 14px; }
+      .btn-update span { display: none; }
+      .stats-bar { gap: 8px; }
+    }
+  </style>
+  </head>
+  <body>
+
+  <header>
+    <div class="header-logo">🎬</div>
+    <div class="header-text">
+      <h1>Nuvio Dashboard</h1>
+      <p>Addon Stremio — Providers francophones</p>
+    </div>
+    <div class="header-badges">
+      <div class="badge" id="status-badge">Chargement...</div>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- Login screen -->
+    <div id="login-screen" style="display:none">
+      <div class="login-card">
+        <div class="lock-icon">🔒</div>
+        <h2>Accès protégé</h2>
+        <p>Entrez le mot de passe pour accéder au tableau de bord.</p>
+        <input type="password" id="pwd-input" placeholder="Mot de passe" onkeydown="if(event.key==='Enter')doLogin()" />
+        <button class="btn-primary" style="width:100%;justify-content:center" onclick="doLogin()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/></svg>
+          Se connecter
+        </button>
+      </div>
+    </div>
+
+    <!-- Dashboard content -->
+    <div id="dashboard-content" style="display:none">
+
+      <!-- Stats -->
+      <div class="stats-bar" id="stats-bar">
+        <div class="stat-card highlight">
+          <div class="stat-value" id="stat-active">—</div>
+          <div class="stat-label">Providers actifs</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="stat-total">—</div>
+          <div class="stat-label">Providers total</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">✓</div>
+          <div class="stat-label">Filtrage liens morts</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">5 min</div>
+          <div class="stat-label">Cache stream</div>
         </div>
       </div>
-      <div class="provider-actions">
-        <button class="btn-update" onclick="openUpdateModal('${name}')">🔄 Mettre à jour</button>
-        <label class="toggle">
-          <input type="checkbox" ${enabled ? 'checked' : ''} onchange="toggleProvider('${name}', this)">
-          <span class="slider"></span>
-        </label>
-      </div>`;
-    list.appendChild(card);
+
+      <div class="section-header">
+        <span class="section-title">Providers de streaming</span>
+        <div class="section-line"></div>
+      </div>
+      <div class="providers-grid" id="providers-list">
+        <div style="color:var(--text2);font-size:14px;padding:20px 0">Chargement des providers...</div>
+      </div>
+
+      <div class="section-header" style="margin-top:8px">
+        <span class="section-title">Gestion des providers</span>
+        <div class="section-line"></div>
+      </div>
+      <div class="add-card">
+        <div class="add-card-header">
+          <div class="icon-box">📥</div>
+          <h3>Installer ou mettre à jour un provider</h3>
+        </div>
+        <div class="form-row">
+          <input type="url" id="add-url" placeholder="https://exemple.com/provider.js" />
+          <input type="text" id="add-name" placeholder="Nom (optionnel)" style="max-width:160px" />
+          <button class="btn-primary" id="add-btn" onclick="addProvider()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+            Ajouter
+          </button>
+        </div>
+        <p class="form-hint">
+          Le fichier <code style="background:var(--surface2);padding:1px 5px;border-radius:4px;font-size:11px">.js</code> sera ajouté à ton repo GitHub.
+          Render redéploiera automatiquement en ~2 minutes.<br>
+          Pour <strong>mettre à jour</strong> un provider existant, donne le même nom que le provider actuel.
+        </p>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Modal mise à jour URL -->
+  <div class="modal-overlay" id="update-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <span class="icon">🔄</span>
+        <h3>Mettre à jour le provider</h3>
+      </div>
+      <p id="update-modal-desc">Entrez l'URL du nouveau fichier .js pour remplacer ce provider.</p>
+      <input type="url" id="update-url" placeholder="https://exemple.com/provider.js" onkeydown="if(event.key==='Enter')confirmUpdate()" />
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="closeModal()">Annuler</button>
+        <button class="btn-primary" id="update-confirm-btn" onclick="confirmUpdate()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12a9 9 0 1 1-6.219-8.56"/><polyline points="21 3 21 9 15 9"/></svg>
+          Mettre à jour
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast">
+    <span class="toast-icon" id="toast-icon"></span>
+    <span id="toast-msg"></span>
+  </div>
+
+  <script>
+  // ── Provider metadata ──────────────────────────────────────────
+  const PROVIDERS_META = {
+    frenchstream: {
+      logo: 'https://www.frenchstream.fi/wp-content/uploads/2023/08/cropped-frenstream-e1692182083748.webp',
+      fallback: '🇫🇷',
+      desc: 'Films & séries en VF français'
+    },
+    movix: {
+      logo: null,
+      fallback: '🎬',
+      desc: 'Multi-sources HD — VF / VOSTFR'
+    },
+    nakastream: {
+      logo: null,
+      fallback: '🌊',
+      desc: 'VF · VOSTFR · MULTI — M3U8 HD'
+    },
+    nakios: {
+      logo: null,
+      fallback: '🎭',
+      desc: 'VF · VOSTFR · MULTI — 1080p / 4K'
+    },
+    purstream: {
+      logo: null,
+      fallback: '💧',
+      desc: 'Streaming haute qualité — 4K / 1080p'
+    },
+    toflix: {
+      logo: null,
+      fallback: '📺',
+      desc: 'FastFlux + Zeus SSE — VF'
+    },
+    vstream: {
+      logo: null,
+      fallback: '▶️',
+      desc: 'VF · VOSTFR · MULTI — HD'
+    }
+  };
+
+  // ── SVG Icons ──────────────────────────────────────────────────
+  const ICON_REFRESH = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12a9 9 0 1 1-6.219-8.56"/><polyline points="21 3 21 9 15 9"/></svg>`;
+  const ICON_SPINNER = `<svg class="spinner" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>`;
+
+  let password = localStorage.getItem('dashboard_pwd') || '';
+  let passwordRequired = false;
+  let currentUpdateTarget = null;
+
+  function headers() {
+    const h = { 'Content-Type': 'application/json' };
+    if (password) h['x-dashboard-password'] = password;
+    return h;
   }
-}
 
-async function toggleProvider(name, checkbox) {
-  checkbox.disabled = true;
-  try {
-    const res = await fetch(`/api/dashboard/toggle/${name}`, { method: 'POST', headers: headers() });
-    if (res.status === 401) { toast('Mot de passe incorrect', 'error'); checkbox.checked = !checkbox.checked; return; }
-    const data = await res.json();
-    const card = document.getElementById('card-' + name);
-    if (card) card.className = 'provider-card' + (data.enabled ? '' : ' disabled');
-    const statusEl = card?.querySelector('.provider-status');
-    if (statusEl) { statusEl.textContent = data.enabled ? '● Actif' : '○ Désactivé'; statusEl.className = 'provider-status' + (data.enabled ? ' on' : ''); }
-    toast(data.enabled ? `${name} activé ✓` : `${name} désactivé`, data.enabled ? 'success' : 'error');
+  function toast(msg, type = 'success') {
+    const el = document.getElementById('toast');
+    const icons = { success: '✓', error: '✕', info: 'ℹ' };
+    document.getElementById('toast-icon').textContent = icons[type] || '•';
+    document.getElementById('toast-msg').textContent = msg;
+    el.className = 'show ' + type;
+    setTimeout(() => el.className = '', 3500);
+  }
+
+  async function load() {
+    try {
+      const res = await fetch('/api/dashboard/status', { headers: headers() });
+      if (res.status === 401) {
+        passwordRequired = true;
+        document.getElementById('login-screen').style.display = 'flex';
+        document.getElementById('dashboard-content').style.display = 'none';
+        return;
+      }
+      const data = await res.json();
+      passwordRequired = data.passwordRequired;
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('dashboard-content').style.display = 'block';
+      renderProviders(data.providers);
+
+      const providers = data.providers;
+      const total = Object.keys(providers).length;
+      const active = Object.values(providers).filter(p => p.enabled && !p.pending).length;
+
+      document.getElementById('stat-active').textContent = active;
+      document.getElementById('stat-total').textContent = total;
+
+      const badge = document.getElementById('status-badge');
+      badge.textContent = `${active} actif${active > 1 ? 's' : ''}`;
+      badge.className = active > 0 ? 'badge' : 'badge offline';
+    } catch (e) {
+      const badge = document.getElementById('status-badge');
+      badge.textContent = 'Hors ligne';
+      badge.className = 'badge offline';
+    }
+  }
+
+  function renderProviders(providers) {
+    const list = document.getElementById('providers-list');
+    list.innerHTML = '';
+    if (!Object.keys(providers).length) {
+      list.innerHTML = '<div style="color:var(--text2);font-size:14px;padding:20px 0">Aucun provider trouvé.</div>';
+      return;
+    }
+    for (const [name, info] of Object.entries(providers)) {
+      const enabled = info.enabled;
+      const pending = info.pending;
+      const meta = PROVIDERS_META[name] || { fallback: '🔌', desc: 'Provider externe' };
+      const displayName = name.charAt(0).toUpperCase() + name.slice(1);
+      const card = document.createElement('div');
+      card.className = 'provider-card ' + (enabled ? 'enabled' : 'disabled');
+      card.id = 'card-' + name;
+
+      let logoHtml;
+      if (meta.logo) {
+        logoHtml = `<img src="${meta.logo}" onerror="this.parentNode.innerHTML='<span class=\"logo-fallback\">${meta.fallback}</span>'" alt="${name}" />`;
+      } else {
+        logoHtml = `<span class="logo-fallback">${meta.fallback}</span>`;
+      }
+
+      let statusHtml;
+      if (pending) {
+        statusHtml = '<span class="provider-status pending"><span class="dot"></span>En attente de redéploiement</span>';
+      } else if (enabled) {
+        statusHtml = '<span class="provider-status on"><span class="dot"></span>Actif</span>';
+      } else {
+        statusHtml = '<span class="provider-status off"><span class="dot"></span>Désactivé</span>';
+      }
+
+      card.innerHTML = `
+        <div class="provider-logo">${logoHtml}</div>
+        <div class="provider-info">
+          <div class="provider-name">${displayName}</div>
+          <div class="provider-desc">${meta.desc}</div>
+          ${statusHtml}
+        </div>
+        <div class="provider-actions">
+          <button class="btn-update" onclick="openUpdateModal('${name}')" title="Mettre à jour ce provider">
+            ${ICON_REFRESH}<span>Mettre à jour</span>
+          </button>
+          <label class="toggle" title="${enabled ? 'Désactiver' : 'Activer'} ${displayName}">
+            <input type="checkbox" ${enabled ? 'checked' : ''} onchange="toggleProvider('${name}', this)">
+            <span class="slider"></span>
+          </label>
+        </div>`;
+      list.appendChild(card);
+    }
+  }
+
+  function doLogin() {
+    const val = document.getElementById('pwd-input').value.trim();
+    if (!val) return;
+    password = val;
+    localStorage.setItem('dashboard_pwd', val);
     load();
-  } catch (e) { toast('Erreur : ' + e.message, 'error'); checkbox.checked = !checkbox.checked; }
-  finally { checkbox.disabled = false; }
-}
+  }
 
-function openUpdateModal(name) {
-  currentUpdateTarget = name;
-  document.getElementById('update-modal-desc').textContent = `Entrez l'URL du nouveau fichier .js pour remplacer "${name}".`;
-  document.getElementById('update-url').value = '';
-  document.getElementById('update-modal').classList.add('open');
-}
+  async function toggleProvider(name, checkbox) {
+    checkbox.disabled = true;
+    const card = document.getElementById('card-' + name);
+    try {
+      const res = await fetch(`/api/dashboard/toggle/${name}`, { method: 'POST', headers: headers() });
+      if (res.status === 401) { toast('Mot de passe incorrect', 'error'); checkbox.checked = !checkbox.checked; return; }
+      const data = await res.json();
+      if (card) card.className = 'provider-card ' + (data.enabled ? 'enabled' : 'disabled');
+      const statusEl = card?.querySelector('.provider-status');
+      if (statusEl) {
+        if (data.enabled) {
+          statusEl.className = 'provider-status on';
+          statusEl.innerHTML = '<span class="dot"></span>Actif';
+        } else {
+          statusEl.className = 'provider-status off';
+          statusEl.innerHTML = '<span class="dot"></span>Désactivé';
+        }
+      }
+      toast(data.enabled ? `${name} activé` : `${name} désactivé`, data.enabled ? 'success' : 'info');
+      load();
+    } catch (e) { toast('Erreur : ' + e.message, 'error'); checkbox.checked = !checkbox.checked; }
+    finally { checkbox.disabled = false; }
+  }
 
-function closeModal() {
-  document.getElementById('update-modal').classList.remove('open');
-  currentUpdateTarget = null;
-}
+  function openUpdateModal(name) {
+    currentUpdateTarget = name;
+    const meta = PROVIDERS_META[name] || {};
+    document.getElementById('update-modal-desc').textContent = `Entrez l'URL du nouveau fichier .js pour remplacer "${name}".`;
+    document.getElementById('update-url').value = '';
+    document.getElementById('update-modal').classList.add('open');
+    setTimeout(() => document.getElementById('update-url').focus(), 100);
+  }
 
-async function confirmUpdate() {
-  const url = document.getElementById('update-url').value.trim();
-  if (!url) { toast('URL requise', 'error'); return; }
-  const btn = document.getElementById('update-confirm-btn');
-  btn.disabled = true; btn.innerHTML = '<span class="spinner">⟳</span> En cours...';
-  try {
-    const res = await fetch('/api/dashboard/provider/add', {
-      method: 'POST', headers: headers(),
-      body: JSON.stringify({ url, name: currentUpdateTarget })
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Erreur');
-    toast('✓ ' + data.message, 'success');
-    closeModal();
-    setTimeout(load, 1000);
-  } catch (e) { toast('Erreur : ' + e.message, 'error'); }
-  finally { btn.disabled = false; btn.textContent = 'Mettre à jour'; }
-}
+  function closeModal() {
+    document.getElementById('update-modal').classList.remove('open');
+    currentUpdateTarget = null;
+  }
 
-async function addProvider() {
-  const url = document.getElementById('add-url').value.trim();
-  const name = document.getElementById('add-name').value.trim();
-  if (!url) { toast('URL du fichier .js requise', 'error'); return; }
-  const btn = document.getElementById('add-btn');
-  btn.disabled = true; btn.innerHTML = '<span class="spinner">⟳</span>';
-  try {
-    const res = await fetch('/api/dashboard/provider/add', {
-      method: 'POST', headers: headers(),
-      body: JSON.stringify({ url, name })
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Erreur');
-    toast('✓ ' + data.message, 'success');
-    document.getElementById('add-url').value = '';
-    document.getElementById('add-name').value = '';
-    setTimeout(load, 1000);
-  } catch (e) { toast('Erreur : ' + e.message, 'error'); }
-  finally { btn.disabled = false; btn.textContent = 'Ajouter'; }
-}
+  async function confirmUpdate() {
+    const url = document.getElementById('update-url').value.trim();
+    if (!url) { toast('URL requise', 'error'); return; }
+    const btn = document.getElementById('update-confirm-btn');
+    btn.disabled = true;
+    btn.innerHTML = `${ICON_SPINNER} En cours...`;
+    try {
+      const res = await fetch('/api/dashboard/provider/add', {
+        method: 'POST', headers: headers(),
+        body: JSON.stringify({ url, name: currentUpdateTarget })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Erreur');
+      toast('✓ ' + data.message, 'success');
+      closeModal();
+      setTimeout(load, 1000);
+    } catch (e) { toast('Erreur : ' + e.message, 'error'); }
+    finally {
+      btn.disabled = false;
+      btn.innerHTML = `${ICON_REFRESH} Mettre à jour`;
+    }
+  }
 
-function doLogin() {
-  password = document.getElementById('pwd-input').value;
-  localStorage.setItem('dashboard_pwd', password);
+  async function addProvider() {
+    const url = document.getElementById('add-url').value.trim();
+    const name = document.getElementById('add-name').value.trim();
+    if (!url) { toast('URL du fichier .js requise', 'error'); return; }
+    const btn = document.getElementById('add-btn');
+    btn.disabled = true;
+    btn.innerHTML = `${ICON_SPINNER} Ajout...`;
+    try {
+      const res = await fetch('/api/dashboard/provider/add', {
+        method: 'POST', headers: headers(),
+        body: JSON.stringify({ url, name })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Erreur');
+      toast('✓ ' + data.message, 'success');
+      document.getElementById('add-url').value = '';
+      document.getElementById('add-name').value = '';
+      setTimeout(load, 1000);
+    } catch (e) { toast('Erreur : ' + e.message, 'error'); }
+    finally {
+      btn.disabled = false;
+      btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg> Ajouter`;
+    }
+  }
+
+  // Close modal on overlay click
+  document.getElementById('update-modal').addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+  });
+
   load();
-}
-document.getElementById('pwd-input')?.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
-
-// Fermer modal en cliquant dehors
-document.getElementById('update-modal').addEventListener('click', function(e) {
-  if (e.target === this) closeModal();
-});
-
-load();
-</script>
-</body>
-</html>
+  </script>
+  </body>
+  </html>
