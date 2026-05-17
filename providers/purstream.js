@@ -1,9 +1,10 @@
 // =============================================================
 // Provider Nuvio : Purstream.ac (VF/VOSTFR/MULTI)
-// Version : 5.1.0 — https module pour bypass Cloudflare bot-detection
+// Version : 5.2.0 — https module + headers CORS browser-like pour bypass Cloudflare
 // =============================================================
 
 var https = require('https');
+var zlib = require('zlib');
 
 var DOMAINS_URL = 'https://raw.githubusercontent.com/Snixi92/nuvio-french-providers/main/domains.json';
 var PURSTREAM_FALLBACK = 'ac';
@@ -14,11 +15,12 @@ var TMDB_KEY = 'f3d757824f08ea2cff45eb8f47ca3a1e';
 
 var _cachedEndpoint = null;
 
-// ── Helper : requête HTTPS via le module natif (HTTP/1.1, bypass Cloudflare) ──
+// ── Helper : requête HTTPS via le module natif (HTTP/1.1, headers CORS pour bypass Cloudflare) ──
 function httpsGetJson(url, extraHeaders) {
   return new Promise(function(resolve, reject) {
     var u;
     try { u = new URL(url); } catch(e) { return reject(new Error('Invalid URL: ' + url)); }
+    var origin = PURSTREAM_REFERER.replace(/\/$/, '');
     var options = {
       hostname: u.hostname,
       path: u.pathname + (u.search || ''),
@@ -26,19 +28,45 @@ function httpsGetJson(url, extraHeaders) {
       headers: Object.assign({
         'User-Agent': PURSTREAM_UA,
         'Referer': PURSTREAM_REFERER,
-        'Accept': 'application/json',
-        'Accept-Language': 'fr-FR,fr;q=0.9,en-US;q=0.8',
+        'Origin': origin,
+        'Accept': 'application/json, text/plain, */*',
+        'Accept-Language': 'fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7',
+        'Accept-Encoding': 'gzip, deflate, br',
         'Connection': 'keep-alive',
+        'sec-fetch-dest': 'empty',
+        'sec-fetch-mode': 'cors',
+        'sec-fetch-site': 'same-site',
         'Host': u.hostname
       }, extraHeaders || {})
     };
     var req = https.request(options, function(res) {
       var chunks = [];
+      var encoding = res.headers['content-encoding'] || '';
       res.on('data', function(c) { chunks.push(c); });
       res.on('end', function() {
-        var body = Buffer.concat(chunks).toString('utf8');
-        try { resolve(JSON.parse(body)); }
-        catch(e) { reject(new Error('JSON parse error: ' + body.slice(0, 80))); }
+        var buf = Buffer.concat(chunks);
+        function parseBody(body) {
+          try { resolve(JSON.parse(body)); }
+          catch(e) { reject(new Error('CF-block or bad JSON: ' + body.slice(0, 80))); }
+        }
+        if (encoding === 'gzip') {
+          zlib.gunzip(buf, function(err, decoded) {
+            if (err) return reject(new Error('gzip decode error: ' + err.message));
+            parseBody(decoded.toString('utf8'));
+          });
+        } else if (encoding === 'br') {
+          zlib.brotliDecompress(buf, function(err, decoded) {
+            if (err) return reject(new Error('brotli decode error: ' + err.message));
+            parseBody(decoded.toString('utf8'));
+          });
+        } else if (encoding === 'deflate') {
+          zlib.inflate(buf, function(err, decoded) {
+            if (err) return reject(new Error('deflate decode error: ' + err.message));
+            parseBody(decoded.toString('utf8'));
+          });
+        } else {
+          parseBody(buf.toString('utf8'));
+        }
       });
     });
     req.on('error', reject);
@@ -224,8 +252,9 @@ function getStreams(tmdbId, mediaType, season, episode) {
         });
       });
   }).catch(function(e) {
-    console.warn('[Purstream] getStreams error:', e && (e.message || String(e)));
-    return [];
+    var msg = e && (e.message || String(e)) || 'unknown';
+    console.warn('[Purstream] getStreams error:', msg);
+    return [{ _debug: true, name: 'DEBUG:' + msg, title: msg, url: '', quality: '', format: '' }];
   });
 }
 
