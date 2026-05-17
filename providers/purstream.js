@@ -206,8 +206,9 @@ function getStreams(tmdbId, mediaType, season, episode) {
         });
       });
   }).catch(function(e) {
-    console.warn('[Purstream] getStreams error:', e.message || e);
-    return [];
+    var msg = e && (e.message || String(e)) || 'unknown error';
+    console.warn('[Purstream] getStreams error:', msg);
+    return [{ _debug: true, name: 'DEBUG:' + msg, title: msg, url: '', quality: '', format: '' }];
   });
 }
 
