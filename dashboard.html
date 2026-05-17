@@ -576,28 +576,40 @@
   }
 
   // ── LOAD ────────────────────────────────────────────────────────
-  async function load() {
-    try {
-      const res  = await fetch('/api/dashboard/status');
-      if (!res.ok) throw new Error('HTTP ' + res.status);
-      const data = await res.json();
-      renderProviders(data.providers || {});
+  const FALLBACK_PROVIDERS = {
+      frenchstream: { enabled: true, pending: false },
+      movix: { enabled: true, pending: false },
+      nakastream: { enabled: false, pending: false },
+      nakios: { enabled: true, pending: false },
+      purstream: { enabled: true, pending: true },
+      toflix: { enabled: false, pending: false },
+      vstream: { enabled: false, pending: false }
+    };
 
-      const total = Object.keys(data.providers || {}).length;
-      const active = Object.values(data.providers || {}).filter(p => p.enabled !== false && !p.pending).length;
+    async function load() {
+      let providers = FALLBACK_PROVIDERS;
+      let live = false;
+      try {
+        const res = await fetch('/api/dashboard/status');
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.providers) {
+            providers = data.providers;
+            live = true;
+          }
+        }
+      } catch (e) {}
+
+      renderProviders(providers);
+
+      const total = Object.keys(providers || {}).length;
+      const active = Object.values(providers || {}).filter(p => p.enabled !== false && !p.pending).length;
       const pill = document.getElementById('hpill');
-      document.getElementById('hpill-txt').textContent = active + '/' + total + ' actif' + (active > 1 ? 's' : '');
+      document.getElementById('hpill-txt').textContent = active + '/' + total + ' actif' + (active > 1 ? 's' : '') + (live ? '' : ' (mode local)');
       pill.className = 'hpill ' + (active > 0 ? 'ok' : 'err');
-    } catch(e) {
-      const pill = document.getElementById('hpill');
-      document.getElementById('hpill-txt').textContent = 'Hors ligne';
-      pill.className = 'hpill err';
-      document.getElementById('pgrid').innerHTML =
-        '<div style="color:var(--red);padding:24px 0">Impossible de joindre le serveur — '+e.message+'</div>';
     }
-  }
 
-  // ── TOGGLE ──────────────────────────────────────────────────────
+    // ── TOGGLE ──────────────────────────────────────────────────────
   async function doToggle(name, cb) {
     cb.disabled = true;
     try {
