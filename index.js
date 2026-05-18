@@ -113,7 +113,7 @@ function withTimeout(promise, ms, name) {
 
 // ── Stream Sort + Dedup ─────────────────────────────────────────────────────────
 const LANG_SCORE = { VF: 0, FRENCH: 0, FR: 0, MULTI: 1, MULTi: 1, VOSTFR: 2, VOSTA: 2, VOSTA$: 2, VO: 3, ENG: 4, EN: 4 };
-const QUAL_SCORE = { '4K': 0, '2160p': 0, '1080p': 1, FHD: 1, '720p': 2, HD: 3, '480p': 4, '360p': 5, SD: 5 };
+const QUAL_SCORE = { '4K': 0, '2160P': 0, '1080P': 1, 'FHD': 1, '720P': 2, 'HD': 3, '480P': 4, '360P': 5, 'SD': 5 };
 
 function streamScore(s) {
   const text = ((s.title || '') + ' ' + (s.name || '')).toUpperCase();
