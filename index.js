@@ -124,14 +124,24 @@ function streamScore(s) {
 }
 
 function sortAndDeduplicateStreams(streams) {
-  const seen = new Set();
-  return streams.filter(s => {
-    if (!s.url) return false;
+  const seen = new Map(); // url -> index in result
+  const result = [];
+  for (const s of streams) {
+    if (!s.url) continue;
     const key = s.url.split('?')[0];
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  }).sort((a, b) => streamScore(a) - streamScore(b));
+    if (seen.has(key)) {
+      // Merge provider prefix into existing stream's name so user sees both
+      const idx = seen.get(key);
+      const newPfx = (s.name || '').replace(/\s*[-–—].*/, '').trim();
+      if (newPfx && !result[idx].name.includes(newPfx)) {
+        result[idx].name = result[idx].name + ' + ' + newPfx;
+      }
+    } else {
+      seen.set(key, result.length);
+      result.push({ ...s });
+    }
+  }
+  return result.sort((a, b) => streamScore(a) - streamScore(b));
 }
 
 // ── Label Enrichment ────────────────────────────────────────────────────────────
