@@ -254,7 +254,7 @@ function getStreams(tmdbId, mediaType, season, episode) {
   }).catch(function(e) {
     var msg = e && (e.message || String(e)) || 'unknown';
     console.warn('[Purstream] getStreams error:', msg);
-    return [{ _debug: true, name: 'DEBUG:' + msg, title: msg, url: '', quality: '', format: '' }];
+    return [];
   });
 }
 
