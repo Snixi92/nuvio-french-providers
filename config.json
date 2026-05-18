@@ -1,12 +1,12 @@
 {
   "providers": {
     "nakios":      { "enabled": true },
-    "purstream":   { "enabled": true },
+    "purstream":   { "enabled": false },
     "movix":       { "enabled": true },
-    "toflix":      { "enabled": true },
+    "toflix":      { "enabled": false },
     "frenchstream":{ "enabled": true },
     "nakastream":  { "enabled": false },
-    "vstream":     { "enabled": true },
+    "vstream":     { "enabled": false },
     "cinepulse":   { "enabled": false }
   }
 }
