@@ -5,7 +5,7 @@
     "movix":       { "enabled": true },
     "toflix":      { "enabled": true },
     "frenchstream":{ "enabled": true },
-    "nakastream":  { "enabled": true },
+    "nakastream":  { "enabled": false },
     "vstream":     { "enabled": true },
     "cinepulse":   { "enabled": false }
   }
