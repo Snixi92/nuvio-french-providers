@@ -1,8 +1,8 @@
 {
   "id": "com.snixi92.french-providers",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "name": "French Streaming Providers",
-  "description": "Nakios, Purstream, Movix, ToFlix, Frenchstream, Cinepulse — Films & séries en VF, VOSTFR, MULTI",
+  "description": "Nakios, Purstream, Movix, ToFlix, Frenchstream, Nakastream, Vstream — VF · VOSTFR · MULTI",
   "logo": "https://i.postimg.cc/nLwY1pJB/nakios.png",
   "resources": ["stream"],
   "types": ["movie", "series"],
