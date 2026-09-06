@@ -1,8 +1,6 @@
 # 🇫🇷 French Streaming Providers — Nuvio Addon
 
-Addon Stremio pour Nuvio avec 7 providers français : **Nakios, Purstream, Movix, ToFlix, Frenchstream, Nakastream, Vstream**.
-
-Films & séries en **VF, VOSTFR, MULTI**.
+Addon Stremio pour Nuvio avec **8 providers français** : VF, VOSTFR, MULTI.
 
 ---
 
@@ -16,7 +14,7 @@ Films & séries en **VF, VOSTFR, MULTI**.
 https://nuvio-french-providers.onrender.com/manifest.json
 ```
 
-4. Confirme — les 7 providers apparaissent immédiatement
+4. Confirme — les providers apparaissent immédiatement
 
 ---
 
@@ -41,10 +39,11 @@ https://raw.githubusercontent.com/Snixi92/nuvio-french-providers/main/manifest.j
 | Frenchstream | ✅ | ✅ | HD |
 | Nakastream | ✅ | ✅ | 1080p, 720p |
 | Vstream | ✅ | ✅ | HD |
+| CinePulse | ✅ | ✅ | 1080p, 720p |
 
 ---
 
 ## ⚙️ Architecture
 
-- **Addon Stremio** (NuvioTV/NuvioWeb) : serveur hébergé sur Render, convertit les IDs IMDB → TMDB et interroge les 7 providers en parallèle
+- **Addon Stremio** (NuvioTV/NuvioWeb) : serveur hébergé sur Render, convertit les IDs IMDB → TMDB et interroge les 8 providers en parallèle
 - **Plugin QuickJS** (NuvioMobile) : les fichiers `providers/*.js` s'exécutent directement sur l'appareil

@@ -1,37 +1,43 @@
 // =============================================================
 // Provider Nuvio : Purstream.ac (VF/VOSTFR/MULTI)
-// Version : 5.2.0 — https module + headers CORS browser-like pour bypass Cloudflare
+// Version : 5.3.0 — Fix status HTTP + Accept-Encoding sans brotli
+//           + suppression mutation globale + detectDomain via httpsGetJson
 // =============================================================
 
 var https = require('https');
 var zlib = require('zlib');
 
-var DOMAINS_URL = 'https://raw.githubusercontent.com/Snixi92/nuvio-french-providers/main/domains.json';
-var PURSTREAM_FALLBACK = 'ac';
-var PURSTREAM_API = 'https://api.purstream.' + PURSTREAM_FALLBACK + '/api/v1';
-var PURSTREAM_REFERER = 'https://purstream.' + PURSTREAM_FALLBACK + '/';
+var DOMAINS_URL_HOST = 'raw.githubusercontent.com';
+var DOMAINS_URL_PATH = '/Snixi92/nuvio-french-providers/main/domains.json';
+var PURSTREAM_FALLBACK_TLD = 'ac';
 var PURSTREAM_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
 var TMDB_KEY = 'f3d757824f08ea2cff45eb8f47ca3a1e';
 
 var _cachedEndpoint = null;
 
-// ── Helper : requête HTTPS via le module natif (HTTP/1.1, headers CORS pour bypass Cloudflare) ──
+// ── Helper : requête HTTPS via le module natif ─────────────────────────────
+// FIX Bug 1 : res.statusCode est vérifié → rejet immédiat si ≠ 200
+// FIX Bug 2 : Accept-Encoding sans 'br' → évite le brotli instable sur Render
 function httpsGetJson(url, extraHeaders) {
   return new Promise(function(resolve, reject) {
     var u;
-    try { u = new URL(url); } catch(e) { return reject(new Error('Invalid URL: ' + url)); }
-    var origin = PURSTREAM_REFERER.replace(/\/$/, '');
+    try { u = new URL(url); } catch (e) { return reject(new Error('Invalid URL: ' + url)); }
+
+    var referer = 'https://purstream.' + PURSTREAM_FALLBACK_TLD + '/';
+    var origin = referer.replace(/\/$/, '');
+
     var options = {
       hostname: u.hostname,
       path: u.pathname + (u.search || ''),
       method: 'GET',
       headers: Object.assign({
         'User-Agent': PURSTREAM_UA,
-        'Referer': PURSTREAM_REFERER,
+        'Referer': referer,
         'Origin': origin,
         'Accept': 'application/json, text/plain, */*',
         'Accept-Language': 'fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7',
-        'Accept-Encoding': 'gzip, deflate, br',
+        // FIX Bug 2 : 'br' retiré — brotli instable sur certaines versions Node de Render
+        'Accept-Encoding': 'gzip, deflate',
         'Connection': 'keep-alive',
         'sec-fetch-dest': 'empty',
         'sec-fetch-mode': 'cors',
@@ -39,29 +45,37 @@ function httpsGetJson(url, extraHeaders) {
         'Host': u.hostname
       }, extraHeaders || {})
     };
+
     var req = https.request(options, function(res) {
       var chunks = [];
-      var encoding = res.headers['content-encoding'] || '';
+      var encoding = (res.headers['content-encoding'] || '').toLowerCase();
+
       res.on('data', function(c) { chunks.push(c); });
       res.on('end', function() {
         var buf = Buffer.concat(chunks);
+
+        // FIX Bug 1 : vérification du status HTTP avant tout décodage
+        if (res.statusCode !== 200) {
+          var preview = '';
+          try { preview = buf.toString('utf8').slice(0, 200); } catch (_) {}
+          return reject(new Error(
+            '[Purstream] HTTP ' + res.statusCode + ' sur ' + url + ' — ' + preview
+          ));
+        }
+
         function parseBody(body) {
           try { resolve(JSON.parse(body)); }
-          catch(e) { reject(new Error('CF-block or bad JSON: ' + body.slice(0, 80))); }
+          catch (e) { reject(new Error('[Purstream] JSON invalide: ' + body.slice(0, 120))); }
         }
+
         if (encoding === 'gzip') {
           zlib.gunzip(buf, function(err, decoded) {
-            if (err) return reject(new Error('gzip decode error: ' + err.message));
-            parseBody(decoded.toString('utf8'));
-          });
-        } else if (encoding === 'br') {
-          zlib.brotliDecompress(buf, function(err, decoded) {
-            if (err) return reject(new Error('brotli decode error: ' + err.message));
+            if (err) return reject(new Error('[Purstream] gzip decode error: ' + err.message));
             parseBody(decoded.toString('utf8'));
           });
         } else if (encoding === 'deflate') {
           zlib.inflate(buf, function(err, decoded) {
-            if (err) return reject(new Error('deflate decode error: ' + err.message));
+            if (err) return reject(new Error('[Purstream] deflate decode error: ' + err.message));
             parseBody(decoded.toString('utf8'));
           });
         } else {
@@ -69,12 +83,37 @@ function httpsGetJson(url, extraHeaders) {
         }
       });
     });
+
     req.on('error', reject);
-    req.setTimeout(15000, function() { req.destroy(new Error('timeout')); });
+    req.setTimeout(15000, function() { req.destroy(new Error('[Purstream] timeout réseau')); });
     req.end();
   });
 }
 
+// ── Détection du domaine Purstream via httpsGetJson ────────────────────────
+// FIX Bug 4 : utilise httpsGetJson (headers browser-like) au lieu de fetch()
+//             pour que la requête GitHub ne soit pas bloquée côté Cloudflare
+function detectPurstreamDomain() {
+  if (_cachedEndpoint) return Promise.resolve(_cachedEndpoint);
+  return httpsGetJson('https://' + DOMAINS_URL_HOST + DOMAINS_URL_PATH)
+    .then(function(data) {
+      var tld = (data && data.purstream) ? data.purstream : PURSTREAM_FALLBACK_TLD;
+      _cachedEndpoint = {
+        api: 'https://api.purstream.' + tld + '/api/v1',
+        referer: 'https://purstream.' + tld + '/'
+      };
+      return _cachedEndpoint;
+    })
+    .catch(function(e) {
+      console.warn('[Purstream] detectDomain fallback:', e.message);
+      return {
+        api: 'https://api.purstream.' + PURSTREAM_FALLBACK_TLD + '/api/v1',
+        referer: 'https://purstream.' + PURSTREAM_FALLBACK_TLD + '/'
+      };
+    });
+}
+
+// ── Helpers TMDB (fetch global, pas derrière Cloudflare) ───────────────────
 function getTmdbDetails(tmdbId, type) {
   var url = 'https://api.themoviedb.org/3/' + (type === 'tv' ? 'tv' : 'movie') + '/' + tmdbId + '?api_key=' + TMDB_KEY + '&language=en-US';
   return fetch(url).then(function(res) { return res.json(); }).then(function(data) {
@@ -82,7 +121,8 @@ function getTmdbDetails(tmdbId, type) {
     return {
       enName: data.title || data.name || 'Purstream',
       year: date ? date.split('-')[0] : '',
-      duration: (type === 'movie' && data.runtime) ? data.runtime + ' min' : (type === 'tv' && data.episode_run_time && data.episode_run_time.length > 0 ? data.episode_run_time[0] + ' min' : '')
+      duration: (type === 'movie' && data.runtime) ? data.runtime + ' min'
+        : (type === 'tv' && data.episode_run_time && data.episode_run_time.length > 0 ? data.episode_run_time[0] + ' min' : '')
     };
   }).catch(function() { return { enName: 'Purstream', year: '', duration: '' }; });
 }
@@ -95,6 +135,19 @@ function getEpisodeInfo(tmdbId, season, episode) {
   }).catch(function() { return null; });
 }
 
+function getTmdbSearchMeta(tmdbId, mediaType) {
+  var type = mediaType === 'tv' ? 'tv' : 'movie';
+  var url = 'https://api.themoviedb.org/3/' + type + '/' + tmdbId + '?language=fr-FR&api_key=' + TMDB_KEY;
+  return fetch(url).then(function(res) { return res.json(); }).then(function(data) {
+    return {
+      fr: data.title || data.name,
+      orig: data.original_title || data.original_name,
+      year: extractYear(data.release_date || data.first_air_date)
+    };
+  });
+}
+
+// ── Utilitaires ────────────────────────────────────────────────────────────
 function buildPurstreamTitle(meta, res, lang, format, season, episode, epInfo) {
   var qIcon = (res.includes('2160') || res.includes('4K')) ? '💎' : '📺';
   var lIcon = '🇫🇷';
@@ -114,25 +167,6 @@ function buildPurstreamTitle(meta, res, lang, format, season, episode, epInfo) {
   return line1 + '\n' + columns.join(' | ');
 }
 
-function detectPurstreamDomain() {
-  if (_cachedEndpoint) return Promise.resolve(_cachedEndpoint);
-  return fetch(DOMAINS_URL)
-    .then(function(res) { if (!res.ok) throw new Error(); return res.json(); })
-    .then(function(data) {
-      var tld = data.purstream || PURSTREAM_FALLBACK;
-      _cachedEndpoint = { api: 'https://api.purstream.' + tld + '/api/v1', referer: 'https://purstream.' + tld + '/' };
-      return _cachedEndpoint;
-    })
-    .catch(function() {
-      return { api: 'https://api.purstream.' + PURSTREAM_FALLBACK + '/api/v1', referer: 'https://purstream.' + PURSTREAM_FALLBACK + '/' };
-    });
-}
-
-function applyPurstreamDomain(endpoint) {
-  PURSTREAM_API = endpoint.api;
-  PURSTREAM_REFERER = endpoint.referer;
-}
-
 function cleanTitle(s) {
   if (!s) return '';
   return s.toLowerCase()
@@ -147,35 +181,36 @@ function extractYear(dateStr) {
   return m ? parseInt(m[1], 10) : null;
 }
 
-function getTmdbSearchMeta(tmdbId, mediaType) {
-  var type = mediaType === 'tv' ? 'tv' : 'movie';
-  var url = 'https://api.themoviedb.org/3/' + type + '/' + tmdbId + '?language=fr-FR&api_key=' + TMDB_KEY;
-  return fetch(url).then(function(res) { return res.json(); }).then(function(data) {
-    return { fr: data.title || data.name, orig: data.original_title || data.original_name, year: extractYear(data.release_date || data.first_air_date) };
+// ── Recherche Purstream ─────────────────────────────────────────────────────
+// FIX Bug 3 : endpoint passé en paramètre, plus de mutation de globales
+function findPurstreamIdByTitle(title, mediaType, tmdbYear, endpoint) {
+  var encoded = encodeURIComponent(title);
+  return httpsGetJson(endpoint.api + '/search-bar/search/' + encoded, {
+    'Referer': endpoint.referer,
+    'Origin': endpoint.referer.replace(/\/$/, ''),
+    'Host': new URL(endpoint.api).hostname
+  }).then(function(data) {
+    var items = data.data && data.data.items && data.data.items.movies && data.data.items.movies.items
+      ? data.data.items.movies.items : [];
+    if (items.length === 0) throw new Error('[Purstream] Not found: ' + title);
+    var cleanTarget = cleanTitle(title);
+    var match = items.find(function(item) {
+      var purYear = extractYear(item.release_date);
+      return cleanTitle(item.title) === cleanTarget && (Math.abs(tmdbYear - purYear) <= 1 || !tmdbYear);
+    }) || items[0];
+    return match.id;
   });
 }
 
-function findPurstreamIdByTitle(title, mediaType, tmdbYear) {
-  var encoded = encodeURIComponent(title);
-  return httpsGetJson(PURSTREAM_API + '/search-bar/search/' + encoded)
-    .then(function(data) {
-      var items = data.data && data.data.items && data.data.items.movies && data.data.items.movies.items ? data.data.items.movies.items : [];
-      if (items.length === 0) throw new Error('Not found: ' + title);
-      var cleanTarget = cleanTitle(title);
-      var match = items.find(function(item) {
-        var purYear = extractYear(item.release_date);
-        return cleanTitle(item.title) === cleanTarget && (Math.abs(tmdbYear - purYear) <= 1 || !tmdbYear);
-      }) || items[0];
-      return match.id;
-    });
-}
-
-function fetchSheet(purstreamId) {
-  return httpsGetJson(PURSTREAM_API + '/media/' + purstreamId + '/sheet')
-    .then(function(data) {
-      if (!data.data || !data.data.items) return [];
-      return data.data.items.urls || [];
-    });
+function fetchSheet(purstreamId, endpoint) {
+  return httpsGetJson(endpoint.api + '/media/' + purstreamId + '/sheet', {
+    'Referer': endpoint.referer,
+    'Origin': endpoint.referer.replace(/\/$/, ''),
+    'Host': new URL(endpoint.api).hostname
+  }).then(function(data) {
+    if (!data.data || !data.data.items) return [];
+    return data.data.items.urls || [];
+  });
 }
 
 function filterEpisodeUrls(urls, season, episode) {
@@ -208,7 +243,7 @@ function parseQuality(name, url) {
   return 'HD';
 }
 
-function normalizeUrls(urls, meta, season, episode, epInfo) {
+function normalizeUrls(urls, meta, season, episode, epInfo, endpoint) {
   return urls
     .filter(function(item) { return item.url && (item.url.match(/\.m3u8/i) || item.url.match(/\.mp4/i)); })
     .map(function(item) {
@@ -221,11 +256,12 @@ function normalizeUrls(urls, meta, season, episode, epInfo) {
         url: item.url,
         quality: q,
         format: fmt,
-        headers: { 'User-Agent': PURSTREAM_UA, 'Referer': PURSTREAM_REFERER }
+        headers: { 'User-Agent': PURSTREAM_UA, 'Referer': endpoint.referer }
       };
     });
 }
 
+// ── Point d'entrée principal ────────────────────────────────────────────────
 function getStreams(tmdbId, mediaType, season, episode) {
   return Promise.all([
     getTmdbDetails(tmdbId, mediaType),
@@ -235,19 +271,21 @@ function getStreams(tmdbId, mediaType, season, episode) {
   ]).then(function(results) {
     var meta = results[0];
     var epInfo = results[1];
-    var endpoint = results[2];
+    var endpoint = results[2]; // FIX Bug 3 : endpoint local, plus de mutation globale
     var search = results[3];
-    applyPurstreamDomain(endpoint);
 
-    return findPurstreamIdByTitle(search.fr, mediaType, search.year)
-      .catch(function() { return findPurstreamIdByTitle(search.orig, mediaType, search.year); })
+    // Essai titre FR, puis titre original si introuvable
+    return findPurstreamIdByTitle(search.fr, mediaType, search.year, endpoint)
+      .catch(function() {
+        return findPurstreamIdByTitle(search.orig, mediaType, search.year, endpoint);
+      })
       .then(function(purstreamId) {
-        return fetchSheet(purstreamId).then(function(urls) {
+        return fetchSheet(purstreamId, endpoint).then(function(urls) {
           if (mediaType === 'tv') {
             var epUrls = filterEpisodeUrls(urls, season, episode);
-            return normalizeUrls(epUrls, meta, season, episode, epInfo);
+            return normalizeUrls(epUrls, meta, season, episode, epInfo, endpoint);
           } else {
-            return normalizeUrls(urls, meta, null, null, null);
+            return normalizeUrls(urls, meta, null, null, null, endpoint);
           }
         });
       });
