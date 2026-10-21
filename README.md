@@ -30,16 +30,15 @@ https://raw.githubusercontent.com/Snixi92/nuvio-french-providers/main/manifest.j
 
 ## 🎬 Providers inclus
 
-| Provider | Films | Séries | Qualité |
-|---|---|---|---|
-| Nakios | ✅ | ✅ | 4K, 1080p, 720p |
-| Purstream | ✅ | ✅ | 1080p, 720p |
-| Movix | ✅ | ✅ | 1080p, 720p |
-| ToFlix | ✅ | ✅ | HD |
-| Frenchstream | ✅ | ✅ | HD |
-| Nakastream | ✅ | ✅ | 1080p, 720p |
-| Vstream | ✅ | ✅ | HD |
-| CinePulse | ✅ | ✅ | 1080p, 720p |
+| Provider | Statut | Films | Séries | Qualité |
+|---|---|---|---|---|
+| Frenchstream | 🟢 Actif | ✅ | ✅ | 1080p, 720p, 480p |
+| Papadustream | 🟢 Actif | ✅ | ✅ | 1080p, 720p, 480p |
+| Coflix | 🟢 Actif | ✅ | ✅ | 720p, HD |
+| Anime-Sama | 🟢 Actif | ❌ | ✅ | 1080p, 720p (Animes VF/VOSTFR) |
+| Nakios | 🟡 En maintenance | ✅ | ✅ | 1080p, 720p |
+| Purstream | 🟡 En maintenance | ✅ | ✅ | 1080p, 720p |
+| Movix | 🟡 En maintenance | ✅ | ✅ | 1080p, 720p |
 
 ---
 

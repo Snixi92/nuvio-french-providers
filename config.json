@@ -1,12 +1,15 @@
 {
   "providers": {
-    "nakios":      { "enabled": true },
-    "purstream":   { "enabled": false },
-    "movix":       { "enabled": true },
-    "toflix":      { "enabled": false },
-    "frenchstream":{ "enabled": true },
-    "nakastream":  { "enabled": false },
-    "vstream":     { "enabled": false },
-    "cinepulse":   { "enabled": false }
+    "frenchstream": { "enabled": true },
+    "papadustream": { "enabled": true },
+    "coflix":       { "enabled": true },
+    "anime-sama":   { "enabled": true },
+    "nakios":       { "enabled": false },
+    "purstream":    { "enabled": false },
+    "movix":        { "enabled": false },
+    "toflix":       { "enabled": false },
+    "nakastream":   { "enabled": false },
+    "vstream":      { "enabled": false },
+    "cinepulse":    { "enabled": false }
   }
 }
