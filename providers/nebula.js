@@ -134,6 +134,8 @@ async function getStreams(tmdbId, mediaType, season, episode, options) {
       return [];
     }
 
+    console.log('[Nebula] stream_url:', playData.stream_url);
+
     // 4. Récupération de la page de lecture et extraction du token HLS chiffré
     var streamRes = await fetchWithTimeout(playData.stream_url, {
       headers: {
