@@ -1,0 +1,18 @@
+name: nuvio-french-providers
+type: web
+ports:
+  - port: 8000
+    protocol: http
+routes:
+  - path: /
+    port: 8000
+regions:
+  - fra
+scalings:
+  - min: 1
+    max: 1
+env:
+  - key: PORT
+    value: "8000"
+  - key: NODE_ENV
+    value: "production"
