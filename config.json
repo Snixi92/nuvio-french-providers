@@ -4,6 +4,7 @@
     "papadustream": { "enabled": true },
     "coflix":       { "enabled": true },
     "anime-sama":   { "enabled": true },
+    "french-anime": { "enabled": true },
     "nakios":       { "enabled": false },
     "purstream":    { "enabled": false },
     "movix":        { "enabled": false },
