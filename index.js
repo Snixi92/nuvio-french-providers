@@ -336,16 +336,25 @@ app.get('/api/dashboard/test/:name', async (req, res) => {
   const provider = providers[name];
   if (!provider) return res.status(404).json({ error: 'Provider introuvable ou non chargé' });
   const mode = (req.query.mode === 'tv') ? 'tv' : 'movie';
-  const tmdbId = mode === 'tv' ? TEST_TV_TMDB : TEST_MOVIE_TMDB;
+  const tmdbId = req.query.tmdb || (mode === 'tv' ? TEST_TV_TMDB : TEST_MOVIE_TMDB);
   const season = parseInt(req.query.season) || 1;
   const episode = parseInt(req.query.episode) || 1;
-  const label = mode === 'tv' ? `Breaking Bad S${season}E${episode}` : 'Inception';
+  const label = mode === 'tv' ? `TV ${tmdbId} S${season}E${episode}` : `Movie ${tmdbId}`;
   const t0 = Date.now();
+  const logs = [];
+  const origLog = console.log;
+  const origWarn = console.warn;
+  console.log = (...args) => { logs.push(args.join(' ')); origLog(...args); };
+  console.warn = (...args) => { logs.push('[WARN] ' + args.join(' ')); origWarn(...args); };
   try {
     const streams = await withTimeout(Promise.resolve().then(() => provider.getStreams(tmdbId, mode, season, episode)), 25000, name);
-    res.json({ provider: name, test: label, elapsed: Date.now() - t0, count: streams.length, streams });
+    console.log = origLog;
+    console.warn = origWarn;
+    res.json({ provider: name, test: label, elapsed: Date.now() - t0, count: streams.length, streams, logs });
   } catch (e) {
-    res.status(500).json({ provider: name, test: label, elapsed: Date.now() - t0, error: e.message, streams: [] });
+    console.log = origLog;
+    console.warn = origWarn;
+    res.status(500).json({ provider: name, test: label, elapsed: Date.now() - t0, error: e.message, streams: [], logs });
   }
 });
 
