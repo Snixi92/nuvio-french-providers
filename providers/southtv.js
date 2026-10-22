@@ -85,32 +85,26 @@ async function getStreams(tmdbId, mediaType, season, episode, options) {
   // 1. Films et spéciaux South Park
   if (SPECIAL_FILMS[id]) {
     var film = SPECIAL_FILMS[id];
-    var vfOk = await checkUrl(film.vf);
-    if (vfOk) {
+    streams.push({
+      name: 'SouthTV (VF)',
+      title: '🇫🇷 [VF] ' + film.title + ' [MP4 Direct] - 1080p',
+      url: film.vf,
+      quality: '1080p',
+      language: 'fr',
+      type: 'mp4',
+      headers: { 'User-Agent': UA, 'Referer': 'https://www.southtv.fr/' }
+    });
+
+    if (film.vo) {
       streams.push({
-        name: 'SouthTV (VF)',
-        title: '🇫🇷 [VF] ' + film.title + ' [MP4 Direct] - 1080p',
-        url: film.vf,
+        name: 'SouthTV (VO)',
+        title: '🇬🇧 [VO] ' + film.title + ' [MP4 Direct] - 1080p',
+        url: film.vo,
         quality: '1080p',
-        language: 'fr',
+        language: 'en',
         type: 'mp4',
         headers: { 'User-Agent': UA, 'Referer': 'https://www.southtv.fr/' }
       });
-    }
-
-    if (film.vo) {
-      var voOk = await checkUrl(film.vo);
-      if (voOk) {
-        streams.push({
-          name: 'SouthTV (VO)',
-          title: '🇬🇧 [VO] ' + film.title + ' [MP4 Direct] - 1080p',
-          url: film.vo,
-          quality: '1080p',
-          language: 'en',
-          type: 'mp4',
-          headers: { 'User-Agent': UA, 'Referer': 'https://www.southtv.fr/' }
-        });
-      }
     }
 
     return streams;
@@ -118,16 +112,12 @@ async function getStreams(tmdbId, mediaType, season, episode, options) {
 
   // 2. Épisodes de la série South Park (TMDB 2190)
   if (id === SOUTH_PARK_TMDB) {
-    var epTag = 'S' + (s < 10 ? '0' + s : s) + 'E' + (e < 10 ? '0' + e : e);
-    var vfEp = (s === 27 && e === 4) ? '04' : e;
-    var vfUrl = 'https://southtv.fr/southpark/s' + s + 'e' + vfEp + '.mp4';
-    var voUrl = 'https://southtv.eu/southparkvo/s' + s + 'e' + e + '.mp4';
+    if (s >= 1 && s <= EPISODES_PER_SEASON.length && e >= 1 && e <= (EPISODES_PER_SEASON[s - 1] || 25)) {
+      var epTag = 'S' + (s < 10 ? '0' + s : s) + 'E' + (e < 10 ? '0' + e : e);
+      var vfEp = (s === 27 && e === 4) ? '04' : e;
+      var vfUrl = 'https://southtv.fr/southpark/s' + s + 'e' + vfEp + '.mp4';
+      var voUrl = 'https://southtv.eu/southparkvo/s' + s + 'e' + e + '.mp4';
 
-    var results = await Promise.all([checkUrl(vfUrl), checkUrl(voUrl)]);
-    var hasVf = results[0];
-    var hasVo = results[1];
-
-    if (hasVf) {
       streams.push({
         name: 'SouthTV (VF)',
         title: '🇫🇷 [VF] South Park ' + epTag + ' [MP4 Direct] - 1080p',
@@ -137,9 +127,7 @@ async function getStreams(tmdbId, mediaType, season, episode, options) {
         type: 'mp4',
         headers: { 'User-Agent': UA, 'Referer': 'https://www.southtv.fr/' }
       });
-    }
 
-    if (hasVo) {
       streams.push({
         name: 'SouthTV (VO)',
         title: '🇬🇧 [VO] South Park ' + epTag + ' [MP4 Direct] - 1080p',
@@ -158,19 +146,16 @@ async function getStreams(tmdbId, mediaType, season, episode, options) {
   if (id === AMERICAN_DAD_TMDB) {
     var adTag = 'S' + (s < 10 ? '0' + s : s) + 'E' + (e < 10 ? '0' + e : e);
     var adUrl = 'https://southtv.eu/americandad/a' + s + 'd' + e + '.mp4';
-    var adOk = await checkUrl(adUrl);
 
-    if (adOk) {
-      streams.push({
-        name: 'SouthTV (VF)',
-        title: '🇫🇷 [VF] American Dad ' + adTag + ' [MP4 Direct] - 1080p',
-        url: adUrl,
-        quality: '1080p',
-        language: 'fr',
-        type: 'mp4',
-        headers: { 'User-Agent': UA, 'Referer': 'https://www.southtv.fr/' }
-      });
-    }
+    streams.push({
+      name: 'SouthTV (VF)',
+      title: '🇫🇷 [VF] American Dad ' + adTag + ' [MP4 Direct] - 1080p',
+      url: adUrl,
+      quality: '1080p',
+      language: 'fr',
+      type: 'mp4',
+      headers: { 'User-Agent': UA, 'Referer': 'https://www.southtv.fr/' }
+    });
 
     return streams;
   }
