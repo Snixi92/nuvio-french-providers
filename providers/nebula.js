@@ -149,7 +149,8 @@ async function getStreams(tmdbId, mediaType, season, episode, options) {
 
     console.log('[Nebula] Stream page status:', streamRes.status);
     if (!streamRes.ok) {
-      console.warn('[Nebula] Stream page failed:', streamRes.status);
+      var errBody = await streamRes.text().catch(function() { return ''; });
+      console.warn('[Nebula] Stream page failed (' + streamRes.status + '):', errBody.slice(0, 300));
       return [];
     }
     var streamHtml = await streamRes.text();
