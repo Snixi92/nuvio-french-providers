@@ -137,6 +137,7 @@ async function getStreams(tmdbId, mediaType, season, episode, options) {
     console.log('[Nebula] stream_url:', playData.stream_url);
 
     // 4. Récupération de la page de lecture et extraction du token HLS chiffré
+    var m3u8Url = null;
     var streamRes = await fetchWithTimeout(playData.stream_url, {
       headers: {
         'User-Agent': UA,
@@ -147,45 +148,43 @@ async function getStreams(tmdbId, mediaType, season, episode, options) {
         'Sec-Fetch-Mode': 'navigate',
         'Sec-Fetch-Site': 'same-origin'
       }
-    }, 6000);
+    }, 6000).catch(function() { return null; });
 
-    console.log('[Nebula] Stream page status:', streamRes.status);
-    if (!streamRes.ok) {
-      var errBody = await streamRes.text().catch(function() { return ''; });
-      console.warn('[Nebula] Stream page failed (' + streamRes.status + '):', errBody.slice(0, 300));
-      return [];
+    if (streamRes && streamRes.ok) {
+      var streamHtml = await streamRes.text();
+      var encMatch = streamHtml.match(/id=["']encrypted-source["'][^>]*value=["']([^"']+)["']/i)
+        || streamHtml.match(/value=["']([^"']+)["'][^>]*id=["']encrypted-source["']/i);
+      if (encMatch && encMatch[1]) {
+        var dec = decodeBase64(encMatch[1]);
+        if (dec && dec.startsWith('http')) {
+          m3u8Url = dec;
+        }
+      }
     }
-    var streamHtml = await streamRes.text();
 
-    var encMatch = streamHtml.match(/id=["']encrypted-source["'][^>]*value=["']([^"']+)["']/i)
-      || streamHtml.match(/value=["']([^"']+)["'][^>]*id=["']encrypted-source["']/i);
-
-    if (!encMatch || !encMatch[1]) {
-      console.warn('[Nebula] Encrypted source not found in streamHtml (len ' + streamHtml.length + ')');
-      return [];
-    }
-    var m3u8Url = decodeBase64(encMatch[1]);
-    console.log('[Nebula] Decoded m3u8:', m3u8Url ? m3u8Url.slice(0, 50) : null);
-
-    if (!m3u8Url || !m3u8Url.startsWith('http')) return [];
+    var finalUrl = m3u8Url || playData.stream_url;
+    if (!finalUrl || !finalUrl.startsWith('http')) return [];
 
     var epTag = isMovie ? 'Film' : ('S' + s + 'E' + e);
     var hasVo = playData.availability && playData.availability.vo;
+    var isHls = !!m3u8Url;
 
     var streams = [];
 
-    // Flux Principal Multi-Audio (VF par défaut avec piste VO incluse dans le manifest HLS)
+    // Flux Principal (Direct HLS si résidentiel/QuickJS, ou Fluxora Player HD si Vercel)
     streams.push({
       name: 'Nebula',
-      title: '🇫🇷 [VF' + (hasVo ? '/VO Multi' : '') + '] ' + epTag + ' [HLS Multi-Audio] - 1080p',
-      url: m3u8Url,
+      title: '🇫🇷 [VF' + (hasVo ? '/VO Multi' : '') + '] ' + epTag + ' [' + (isHls ? 'HLS Multi-Audio' : 'Fluxora HD') + '] - 1080p',
+      url: finalUrl,
       quality: '1080p',
       language: 'fr',
-      type: 'hls',
-      headers: {
-        'User-Agent': UA,
-        'Referer': BASE_EMBED + '/'
-      }
+      ...(isHls ? {
+        type: 'hls',
+        headers: {
+          'User-Agent': UA,
+          'Referer': BASE_EMBED + '/'
+        }
+      } : {})
     });
 
     return streams;
