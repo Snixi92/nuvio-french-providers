@@ -138,7 +138,12 @@ async function getStreams(tmdbId, mediaType, season, episode, options) {
     var streamRes = await fetchWithTimeout(playData.stream_url, {
       headers: {
         'User-Agent': UA,
-        'Referer': BASE_EMBED + '/'
+        'Referer': embedUrl,
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'fr-FR,fr;q=0.9,en;q=0.8',
+        'Sec-Fetch-Dest': 'iframe',
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Site': 'same-origin'
       }
     }, 6000);
 
