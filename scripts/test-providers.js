@@ -14,7 +14,8 @@ const providerDir = path.join(rootDir, 'providers');
 const testCases = [
   { tmdbId: '27205', type: 'movie', label: 'Film: Inception (TMDB 27205)' },
   { tmdbId: '96677', type: 'tv', season: 1, episode: 1, label: 'Série VF: Lupin S1E1 (TMDB 96677)' },
-  { tmdbId: '1429', type: 'tv', season: 1, episode: 1, label: 'Anime: L\'Attaque des Titans S1E1 (TMDB 1429)' }
+  { tmdbId: '1429', type: 'tv', season: 1, episode: 1, label: 'Anime: L\'Attaque des Titans S1E1 (TMDB 1429)' },
+  { tmdbId: '2190', type: 'tv', season: 1, episode: 1, label: 'Série Culte: South Park S1E1 (TMDB 2190)' }
 ];
 
 async function run() {

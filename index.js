@@ -229,7 +229,7 @@ function dashboardAuth(req, res, next) {
 async function isLinkAlive(stream) {
   const url = stream.url;
   if (!url || !url.startsWith('http')) return false;
-  if (url.includes('.m3u8') || url.includes('m3u8') || url.includes('/embed') || url.includes('fluxora')) return true;
+  if (url.includes('.m3u8') || url.includes('m3u8') || url.includes('/embed') || url.includes('fluxora') || url.includes('southtv')) return true;
   try {
     const controller = new AbortController();
     const tid = setTimeout(() => controller.abort(), LINK_CHECK_TIMEOUT);
