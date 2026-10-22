@@ -59,8 +59,10 @@ async function checkUrl(url) {
         'Referer': 'https://www.southtv.fr/'
       }
     }, 3000);
+    console.log('[SouthTV] checkUrl ' + url + ' -> ' + res.status);
     return res.status >= 200 && res.status < 400;
-  } catch (_) {
+  } catch (e) {
+    console.warn('[SouthTV] checkUrl error on ' + url + ': ' + e.message);
     return false;
   }
 }
