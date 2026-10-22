@@ -77,21 +77,13 @@ async function getStreams(tmdbId, mediaType, season, episode, options) {
       }
     }, 6000);
 
-    console.log('[Nebula] Embed status:', embedRes.status);
-    if (!embedRes.ok) {
-      console.warn('[Nebula] Embed HTTP error:', embedRes.status);
-      return [];
-    }
+    if (!embedRes.ok) return [];
     var embedHtml = await embedRes.text();
 
     // 2. Extraction du SID de session
     var sidMatch = embedHtml.match(/const\s+SID\s*=\s*["']([^"']+)["']/);
-    if (!sidMatch || !sidMatch[1]) {
-      console.warn('[Nebula] SID match failed, HTML len:', embedHtml.length, embedHtml.slice(0, 300));
-      return [];
-    }
+    if (!sidMatch || !sidMatch[1]) return [];
     var sid = sidMatch[1];
-    console.log('[Nebula] SID extracted:', sid);
 
     // 3. Appel API pour déclencher la lecture
     var playData = null;
@@ -112,10 +104,8 @@ async function getStreams(tmdbId, mediaType, season, episode, options) {
         })
       }, 5000);
 
-      console.log('[Nebula] Play status (attempt ' + attempt + '):', playRes.status);
       if (!playRes.ok) break;
       playData = await playRes.json();
-      console.log('[Nebula] PlayData ok:', playData && playData.ok, 'error:', playData && playData.error);
 
       if (playData && playData.ok && playData.stream_url) {
         break;
@@ -129,12 +119,7 @@ async function getStreams(tmdbId, mediaType, season, episode, options) {
       }
     }
 
-    if (!playData || !playData.ok || !playData.stream_url) {
-      console.warn('[Nebula] Play failed or no stream_url:', JSON.stringify(playData));
-      return [];
-    }
-
-    console.log('[Nebula] stream_url:', playData.stream_url);
+    if (!playData || !playData.ok || !playData.stream_url) return [];
 
     // 4. Récupération de la page de lecture et extraction du token HLS chiffré
     var m3u8Url = null;
