@@ -77,13 +77,21 @@ async function getStreams(tmdbId, mediaType, season, episode, options) {
       }
     }, 6000);
 
-    if (!embedRes.ok) return [];
+    console.log('[Nebula] Embed status:', embedRes.status);
+    if (!embedRes.ok) {
+      console.warn('[Nebula] Embed HTTP error:', embedRes.status);
+      return [];
+    }
     var embedHtml = await embedRes.text();
 
     // 2. Extraction du SID de session
     var sidMatch = embedHtml.match(/const\s+SID\s*=\s*["']([^"']+)["']/);
-    if (!sidMatch || !sidMatch[1]) return [];
+    if (!sidMatch || !sidMatch[1]) {
+      console.warn('[Nebula] SID match failed, HTML len:', embedHtml.length, embedHtml.slice(0, 300));
+      return [];
+    }
     var sid = sidMatch[1];
+    console.log('[Nebula] SID extracted:', sid);
 
     // 3. Appel API pour déclencher la lecture
     var playData = null;
@@ -104,8 +112,10 @@ async function getStreams(tmdbId, mediaType, season, episode, options) {
         })
       }, 5000);
 
+      console.log('[Nebula] Play status (attempt ' + attempt + '):', playRes.status);
       if (!playRes.ok) break;
       playData = await playRes.json();
+      console.log('[Nebula] PlayData ok:', playData && playData.ok, 'error:', playData && playData.error);
 
       if (playData && playData.ok && playData.stream_url) {
         break;
@@ -119,7 +129,10 @@ async function getStreams(tmdbId, mediaType, season, episode, options) {
       }
     }
 
-    if (!playData || !playData.ok || !playData.stream_url) return [];
+    if (!playData || !playData.ok || !playData.stream_url) {
+      console.warn('[Nebula] Play failed or no stream_url:', JSON.stringify(playData));
+      return [];
+    }
 
     // 4. Récupération de la page de lecture et extraction du token HLS chiffré
     var streamRes = await fetchWithTimeout(playData.stream_url, {
@@ -129,14 +142,22 @@ async function getStreams(tmdbId, mediaType, season, episode, options) {
       }
     }, 6000);
 
-    if (!streamRes.ok) return [];
+    console.log('[Nebula] Stream page status:', streamRes.status);
+    if (!streamRes.ok) {
+      console.warn('[Nebula] Stream page failed:', streamRes.status);
+      return [];
+    }
     var streamHtml = await streamRes.text();
 
     var encMatch = streamHtml.match(/id=["']encrypted-source["'][^>]*value=["']([^"']+)["']/i)
       || streamHtml.match(/value=["']([^"']+)["'][^>]*id=["']encrypted-source["']/i);
 
-    if (!encMatch || !encMatch[1]) return [];
+    if (!encMatch || !encMatch[1]) {
+      console.warn('[Nebula] Encrypted source not found in streamHtml (len ' + streamHtml.length + ')');
+      return [];
+    }
     var m3u8Url = decodeBase64(encMatch[1]);
+    console.log('[Nebula] Decoded m3u8:', m3u8Url ? m3u8Url.slice(0, 50) : null);
 
     if (!m3u8Url || !m3u8Url.startsWith('http')) return [];
 
