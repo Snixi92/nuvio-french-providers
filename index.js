@@ -467,17 +467,23 @@ app.get('/stream/:type/:id.json', async (req, res) => {
   res.json({ streams });
 });
 
-// ── Keep-alive ────────────────────────────────────────────────────────────────────
-app.listen(PORT, () => {
-  console.log(`[Server] Port ${PORT} | ${Object.keys(providers).length} providers chargés`);
-  if (process.env.NODE_ENV === 'production' && process.env.RENDER_EXTERNAL_URL) {
-    const pingUrl = process.env.RENDER_EXTERNAL_URL.replace(/\/$/, '') + '/healthz';
-    console.log(`[Keep-alive] → ${pingUrl} toutes les 10 min`);
-    setInterval(async () => {
-      try { const r = await fetch(pingUrl, { signal: AbortSignal.timeout(10000) }); console.log(`[Keep-alive] OK ${r.status}`); }
-      catch (e) { console.warn('[Keep-alive]', e.message); }
-    }, 10 * 60 * 1000);
-  }
-});
+// ── Keep-alive & Export ───────────────────────────────────────────────────────────
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log('[Server] Port ' + PORT + ' | ' + Object.keys(providers).length + ' providers chargés');
+    if (process.env.NODE_ENV === 'production' && process.env.RENDER_EXTERNAL_URL) {
+      const pingUrl = process.env.RENDER_EXTERNAL_URL.replace(/\/$/, '') + '/healthz';
+      console.log('[Keep-alive] → ' + pingUrl + ' toutes les 10 min');
+      setInterval(async () => {
+        try {
+          const r = await fetch(pingUrl, { signal: AbortSignal.timeout(10000) });
+          console.log('[Keep-alive] OK ' + r.status);
+        } catch (e) {
+          console.warn('[Keep-alive]', e.message);
+        }
+      }, 10 * 60 * 1000);
+    }
+  });
+}
 
 module.exports = app;
