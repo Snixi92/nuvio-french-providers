@@ -80,50 +80,48 @@ async function getStreams(tmdbId, mediaType, season, episode, options) {
     if (!embedRes.ok) return [];
     var embedHtml = await embedRes.text();
 
-    // 2. Extraction du SID de session
-    var sidMatch = embedHtml.match(/const\s+SID\s*=\s*["']([^"']+)["']/);
-    if (!sidMatch || !sidMatch[1]) return [];
-    var sid = sidMatch[1];
+    // 2. Extraction du flux initial pré-calculé (évite le warming et les blocages anti-bot)
+    var streamUrl = null;
+    var initMatch = embedHtml.match(/const\s+INITIAL_PLAY\s*=\s*({[^;]+});/);
+    if (initMatch) {
+      try {
+        var initData = JSON.parse(initMatch[1]);
+        if (initData && initData.ok && initData.stream_url) {
+          streamUrl = initData.stream_url;
+        }
+      } catch (_) {}
+    }
 
-    // 3. Appel API pour déclencher la lecture
-    var playData = null;
-    for (var attempt = 0; attempt < 2; attempt++) {
-      var playRes = await fetchWithTimeout(BASE_EMBED + '/api/embed-player/play', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'User-Agent': UA,
-          'Referer': embedUrl,
-          'Origin': BASE_EMBED
-        },
-        body: JSON.stringify({
-          sid: sid,
-          lang: 'vf',
-          embed_mobile: 0
-        })
-      }, 5000);
-
-      if (!playRes.ok) break;
-      playData = await playRes.json();
-
-      if (playData && playData.ok && playData.stream_url) {
-        break;
-      }
-
-      // Si le serveur prépare le flux (warming), courte attente
-      if (playData && playData.error === 'warming' && attempt === 0) {
-        await new Promise(function(r) { setTimeout(r, 1200); });
-      } else {
-        break;
+    // 3. Fallback via appel API play si non présent dans INITIAL_PLAY
+    if (!streamUrl) {
+      var sidMatch = embedHtml.match(/const\s+SID\s*=\s*["']([^"']+)["']/);
+      if (sidMatch && sidMatch[1]) {
+        var sid = sidMatch[1];
+        var playRes = await fetchWithTimeout(BASE_EMBED + '/api/embed-player/play', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'User-Agent': UA,
+            'Referer': embedUrl,
+            'Origin': BASE_EMBED
+          },
+          body: JSON.stringify({ sid: sid, lang: 'vf', embed_mobile: 0 })
+        }, 4000).catch(function() { return null; });
+        if (playRes && playRes.ok) {
+          var playData = await playRes.json().catch(function() { return null; });
+          if (playData && playData.ok && playData.stream_url) {
+            streamUrl = playData.stream_url;
+          }
+        }
       }
     }
 
-    if (!playData || !playData.ok || !playData.stream_url) return [];
+    if (!streamUrl) return [];
 
     // 4. Récupération de la page de lecture et extraction du token HLS chiffré
     var m3u8Url = null;
-    var streamRes = await fetchWithTimeout(playData.stream_url, {
+    var streamRes = await fetchWithTimeout(streamUrl, {
       headers: {
         'User-Agent': UA,
         'Referer': embedUrl,
