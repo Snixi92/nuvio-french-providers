@@ -252,7 +252,7 @@ async function isLinkAlive(stream) {
   const url = stream.url;
   if (!url || !url.startsWith('http')) return false;
   if (url.includes('/embed-stream/') || url.includes('/embed/')) return false;
-  if (url.includes('.m3u8') || url.includes('m3u8') || url.includes('fluxora') || url.includes('southtv') || url.includes('popflix') || url.includes('falzey') || url.includes('ocplanet') || url.includes('zen-blk') || url.includes('blinkflux')) return true;
+  if (url.includes('.m3u8') || url.includes('m3u8') || url.includes('fluxora') || url.includes('southtv') || url.includes('popflix') || url.includes('streamflix') || url.includes('stream-flix') || url.includes('vida-loka') || url.includes('falzey') || url.includes('ocplanet') || url.includes('zen-blk') || url.includes('blinkflux')) return true;
   try {
     const controller = new AbortController();
     const tid = setTimeout(() => controller.abort(), LINK_CHECK_TIMEOUT);

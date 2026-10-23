@@ -1,6 +1,7 @@
 {
   "providers": {
     "frenchstream": { "enabled": true },
+    "streamflix":   { "enabled": true },
     "popflix":      { "enabled": true },
     "southtv":      { "enabled": true },
     "nebula":       { "enabled": true },
