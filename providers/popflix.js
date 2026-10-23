@@ -205,6 +205,23 @@ async function getStreams(tmdbId, mediaType, season, episode, options) {
           }
         }
 
+        // Fallback CDN si l'épisode est déjà encodé sur le stockage mais pas encore indexé en base
+        if (!ep && serie && serie.series_name) {
+          var cleanName = serie.series_name.replace(/[^a-zA-Z0-9]/g, '');
+          var sPad = querySeason < 10 ? '0' + querySeason : querySeason;
+          var ePad = queryEpisode < 10 ? '0' + queryEpisode : queryEpisode;
+          var fallbackPath = '/series/VF/' + cleanName + '/S' + sPad + '/' + cleanName + '-S' + sPad + '-E' + ePad + '.mp4';
+          var fallbackUrl = 'https://falzey.lol/api/video_proxy.php?file=' + fallbackPath + '&cdn=cdn';
+          try {
+            var checkRes = await fetchWithTimeout(fallbackUrl, {
+              headers: { 'User-Agent': UA, 'Referer': 'https://popflix.fr/', 'Range': 'bytes=0-100' }
+            }, 3000);
+            if (checkRes && (checkRes.status === 200 || checkRes.status === 206)) {
+              ep = { url: fallbackUrl };
+            }
+          } catch (_) {}
+        }
+
         if (ep && (ep.url || ep.player)) {
           var rawUrl = ep.url || ep.player;
           var directEpUrl = await resolveDirectVideoUrl(rawUrl);
