@@ -146,6 +146,13 @@ function sortAndDeduplicateStreams(streams) {
 
 // ── Label Enrichment ────────────────────────────────────────────────────────────
 function enrichStream(s) {
+  if (!s || !s.url) return null;
+  // Ne jamais laisser passer des pages HTML d'embeds (ex: Fluxora embed-stream) qui font freezer Stremio en Buffering...
+  if (s.url.includes('/embed-stream/') || s.url.includes('/embed/') || s.url.endsWith('.html')) {
+    console.warn(`[Filter] Embed HTML bloqué : ${s.url.slice(0, 60)}`);
+    return null;
+  }
+
   const text = ((s.title || '') + ' ' + (s.name || '')).toUpperCase();
   if (!s.title) return s;
   // Add quality badge if missing
@@ -159,6 +166,21 @@ function enrichStream(s) {
     else if (text.includes('VOSTFR') || text.includes('VOSTA')) enriched.title = '🔡 ' + s.title;
     else if (text.includes(' VO') || text.includes('ENG')) enriched.title = '🇬🇧 ' + s.title;
   }
+
+  // Injecter systématiquement behaviorHints pour Stremio (sinon Referer / User-Agent ne sont pas transmis par ExoPlayer / VLC)
+  if (s.headers && Object.keys(s.headers).length > 0) {
+    enriched.behaviorHints = {
+      ...(enriched.behaviorHints || {}),
+      notWebReady: true,
+      proxyHeaders: {
+        request: {
+          ...((enriched.behaviorHints?.proxyHeaders?.request) || {}),
+          ...s.headers
+        }
+      }
+    };
+  }
+
   return enriched;
 }
 
@@ -229,7 +251,8 @@ function dashboardAuth(req, res, next) {
 async function isLinkAlive(stream) {
   const url = stream.url;
   if (!url || !url.startsWith('http')) return false;
-  if (url.includes('.m3u8') || url.includes('m3u8') || url.includes('/embed') || url.includes('fluxora') || url.includes('southtv') || url.includes('popflix') || url.includes('falzey') || url.includes('ocplanet') || url.includes('zen-blk') || url.includes('blinkflux')) return true;
+  if (url.includes('/embed-stream/') || url.includes('/embed/')) return false;
+  if (url.includes('.m3u8') || url.includes('m3u8') || url.includes('fluxora') || url.includes('southtv') || url.includes('popflix') || url.includes('falzey') || url.includes('ocplanet') || url.includes('zen-blk') || url.includes('blinkflux')) return true;
   try {
     const controller = new AbortController();
     const tid = setTimeout(() => controller.abort(), LINK_CHECK_TIMEOUT);
@@ -463,7 +486,7 @@ app.get('/stream/:type/:id.json', async (req, res) => {
   console.log(`[Stream] ${rawStreams.length} streams bruts en ${Date.now() - t0}ms`);
 
   // Enrich labels
-  const enriched = rawStreams.map(enrichStream);
+  const enriched = rawStreams.map(enrichStream).filter(Boolean);
 
   // Filter dead links
   const alive = await filterDeadStreams(enriched);

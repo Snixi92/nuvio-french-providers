@@ -133,7 +133,7 @@ async function getStreams(tmdbId, mediaType, season, episode, options) {
         'Sec-Fetch-Mode': 'navigate',
         'Sec-Fetch-Site': 'same-origin'
       }
-    }, 6000).catch(function() { return null; });
+    }, 9000).catch(function() { return null; });
 
     if (streamRes && streamRes.ok) {
       var streamHtml = await streamRes.text();
@@ -147,29 +147,34 @@ async function getStreams(tmdbId, mediaType, season, episode, options) {
       }
     }
 
-    var finalUrl = m3u8Url || playData.stream_url;
-    if (!finalUrl || !finalUrl.startsWith('http')) return [];
+    // Ne JAMAIS renvoyer une page HTML embed comme flux vidéo (sinon Stremio bloque en Buffering...)
+    if (!m3u8Url) return [];
 
     var epTag = isMovie ? 'Film' : ('S' + s + 'E' + e);
     var hasVo = playData.availability && playData.availability.vo;
-    var isHls = !!m3u8Url;
 
     var streams = [];
 
-    // Flux Principal (Direct HLS si résidentiel/QuickJS, ou Fluxora Player HD si Vercel)
     streams.push({
       name: 'Nebula',
-      title: '🇫🇷 [VF' + (hasVo ? '/VO Multi' : '') + '] ' + epTag + ' [' + (isHls ? 'HLS Multi-Audio' : 'Fluxora HD') + '] - 1080p',
-      url: finalUrl,
+      title: '🇫🇷 [VF' + (hasVo ? '/VO Multi' : '') + '] ' + epTag + ' [HLS Multi-Audio] - 1080p',
+      url: m3u8Url,
       quality: '1080p',
       language: 'fr',
-      ...(isHls ? {
-        type: 'hls',
-        headers: {
-          'User-Agent': UA,
-          'Referer': BASE_EMBED + '/'
+      type: 'hls',
+      headers: {
+        'User-Agent': UA,
+        'Referer': BASE_EMBED + '/'
+      },
+      behaviorHints: {
+        notWebReady: true,
+        proxyHeaders: {
+          request: {
+            'User-Agent': UA,
+            'Referer': BASE_EMBED + '/'
+          }
         }
-      } : {})
+      }
     });
 
     return streams;

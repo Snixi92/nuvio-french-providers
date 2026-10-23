@@ -153,16 +153,30 @@ async function getStreams(tmdbId, mediaType, season, episode, options) {
             : '1080p';
           var size = (film.source && film.source.size) ? ' (' + film.source.size + ')' : '';
 
+          var streamUrl = directUrl;
+          if (streamUrl && !streamUrl.includes('.mp4') && !streamUrl.includes('.m3u8')) {
+            streamUrl += '#video.mp4';
+          }
+
           streams.push({
             name: 'PopFlix',
             title: '🇫🇷 [VF] ' + (film.title || 'Film') + ' [MP4 Direct] - ' + qual + size,
-            url: directUrl,
+            url: streamUrl,
             quality: qual,
             language: 'fr',
             type: 'mp4',
             headers: {
               'User-Agent': UA,
               'Referer': base + '/'
+            },
+            behaviorHints: {
+              notWebReady: true,
+              proxyHeaders: {
+                request: {
+                  'User-Agent': UA,
+                  'Referer': base + '/'
+                }
+              }
             }
           });
         }
@@ -189,16 +203,30 @@ async function getStreams(tmdbId, mediaType, season, episode, options) {
           var epSize = ep.size ? ' (' + ep.size + ')' : '';
           var epTag = 'S' + (s < 10 ? '0' + s : s) + 'E' + (e < 10 ? '0' + e : e);
 
+          var epStreamUrl = directEpUrl;
+          if (epStreamUrl && !epStreamUrl.includes('.mp4') && !epStreamUrl.includes('.m3u8')) {
+            epStreamUrl += '#video.mp4';
+          }
+
           streams.push({
             name: 'PopFlix',
             title: '🇫🇷 [VF] ' + (serie.series_name || 'Série') + ' ' + epTag + ' [MP4 Direct] - 1080p' + epSize,
-            url: directEpUrl,
+            url: epStreamUrl,
             quality: '1080p',
             language: 'fr',
             type: 'mp4',
             headers: {
               'User-Agent': UA,
               'Referer': base + '/'
+            },
+            behaviorHints: {
+              notWebReady: true,
+              proxyHeaders: {
+                request: {
+                  'User-Agent': UA,
+                  'Referer': base + '/'
+                }
+              }
             }
           });
         }
