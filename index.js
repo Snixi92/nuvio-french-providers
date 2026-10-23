@@ -270,26 +270,31 @@ async function isLinkAlive(stream) {
   const url = stream.url;
   if (!url || !url.startsWith('http')) return false;
   if (url.includes('/embed-stream/') || url.includes('/embed/')) return false;
-  if (url.includes('.m3u8') || url.includes('m3u8') || url.includes('fluxora') || url.includes('southtv') || url.includes('popflix') || url.includes('streamflix') || url.includes('stream-flix') || url.includes('vida-loka') || url.includes('falzey') || url.includes('ocplanet') || url.includes('zen-blk') || url.includes('blinkflux')) return true;
   try {
     const controller = new AbortController();
     const tid = setTimeout(() => controller.abort(), LINK_CHECK_TIMEOUT);
-    const resp = await fetch(url, { method: 'HEAD', headers: stream.headers || {}, signal: controller.signal, redirect: 'follow' });
+    const method = url.includes('.m3u8') ? 'GET' : 'HEAD';
+    const headers = { ...(stream.headers || {}) };
+    headers['Range'] = 'bytes=0-100';
+    const resp = await fetch(url, { method, headers, signal: controller.signal, redirect: 'follow' });
     clearTimeout(tid);
-    if ([403, 404, 410, 451].includes(resp.status)) { console.log(`[LinkCheck] ✗ ${resp.status} → ${url.slice(0, 80)}`); return false; }
+    if ([403, 404, 410, 451, 500, 502, 503].includes(resp.status)) {
+      console.log(`[LinkCheck] ✗ ${resp.status} → ${url.slice(0, 80)}`);
+      return false;
+    }
     return true;
-  } catch { return true; }
+  } catch (e) {
+    console.log(`[LinkCheck] ✗ Erreur → ${url.slice(0, 60)} : ${e.message}`);
+    return false;
+  }
 }
 async function filterDeadStreams(streams) {
   if (!streams || streams.length === 0) return [];
-  const mp4 = streams.filter(s => !s.url?.includes('.m3u8'));
-  const hls = streams.filter(s => s.url?.includes('.m3u8'));
-  if (mp4.length === 0) return streams;
-  const checks = await Promise.allSettled(mp4.map(s => isLinkAlive(s).then(ok => ok ? s : null)));
-  const validMp4 = checks.filter(r => r.status === 'fulfilled' && r.value).map(r => r.value);
-  const removed = mp4.length - validMp4.length;
+  const checks = await Promise.allSettled(streams.map(s => isLinkAlive(s).then(ok => ok ? s : null)));
+  const valid = checks.filter(r => r.status === 'fulfilled' && r.value).map(r => r.value);
+  const removed = streams.length - valid.length;
   if (removed > 0) console.log(`[LinkCheck] ${removed} lien(s) mort(s) filtré(s)`);
-  return [...validMp4, ...hls];
+  return valid;
 }
 
 // ── Routes Stremio ────────────────────────────────────────────────────────────────

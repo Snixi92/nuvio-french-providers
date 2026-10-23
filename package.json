@@ -1,6 +1,6 @@
 {
   "name": "nuvio-french-providers",
-  "version": "1.7.1",
+  "version": "1.7.2",
   "description": "Addon Stremio - Providers francophones pour Nuvio",
   "main": "index.js",
   "scripts": {

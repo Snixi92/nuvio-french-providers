@@ -122,6 +122,24 @@ async function getStreams(tmdbId, mediaType, season, episode, options) {
           finalUrl += '#video.mp4';
         }
 
+        // Vérification immédiate que le fichier existe bien sur le CDN (évite les fausses URLs 404 sur saisons non uploadées)
+        try {
+          var probeRes = await fetchWithTimeout(finalUrl, {
+            method: 'HEAD',
+            headers: {
+              'User-Agent': UA,
+              'Referer': base + '/'
+            }
+          }, 3000);
+          if (probeRes && (probeRes.status === 404 || probeRes.status === 403 || probeRes.status === 410)) {
+            console.log('[StreamFlix] Fichier non disponible sur CDN (HTTP ' + probeRes.status + ') : ' + finalUrl.slice(0, 60));
+            continue;
+          }
+        } catch (probeErr) {
+          console.log('[StreamFlix] Échec vérification CDN (' + probeErr.message + ') : ' + finalUrl.slice(0, 60));
+          continue;
+        }
+
         var epTag = isMovie ? 'Film' : ('S' + (s < 10 ? '0' + s : s) + 'E' + (e < 10 ? '0' + e : e));
 
         streams.push({
