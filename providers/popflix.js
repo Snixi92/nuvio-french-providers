@@ -120,6 +120,15 @@ async function getStreams(tmdbId, mediaType, season, episode, options) {
   var e = parseInt(episode, 10) || 1;
   var streams = [];
 
+  // Correction de correspondance de saison (ex: Lupin TMDB 96677)
+  var querySeason = s;
+  var queryEpisode = e;
+  if (id === '96677') {
+    if (s === 4) { querySeason = 3; }
+    else if (s === 3) { querySeason = 2; }
+    else if (s === 2) { querySeason = 1; queryEpisode = e + 5; }
+  }
+
   if (!id) return [];
 
   var token = await getAccessToken();
@@ -190,7 +199,7 @@ async function getStreams(tmdbId, mediaType, season, episode, options) {
           var epNum = parseInt(item.episode_number, 10);
           var sMatch = String(item.season || '').match(/\d+/);
           var sNum = sMatch ? parseInt(sMatch[0], 10) : 1;
-          if (sNum === s && epNum === e) {
+          if (sNum === querySeason && epNum === queryEpisode) {
             ep = item;
             break;
           }

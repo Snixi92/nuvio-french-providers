@@ -62,11 +62,19 @@ async function getStreams(tmdbId, mediaType, season, episode, options) {
   var isMovie = (mediaType === 'movie' || mediaType === 'film');
   var id = String(tmdbId || '').trim();
 
+  var querySeason = s;
+  var queryEpisode = e;
+  if (id === '96677') {
+    if (s === 4) { querySeason = 3; }
+    else if (s === 3) { querySeason = 2; }
+    else if (s === 2) { querySeason = 1; queryEpisode = e + 5; }
+  }
+
   if (!id) return [];
 
   var embedUrl = isMovie
     ? BASE_EMBED + '/embed/zenix?tmdb=' + id + '&type=movie'
-    : BASE_EMBED + '/embed/zenix?tmdb=' + id + '&type=tv&season=' + s + '&episode=' + e;
+    : BASE_EMBED + '/embed/zenix?tmdb=' + id + '&type=tv&season=' + querySeason + '&episode=' + queryEpisode;
 
   try {
     // 1. Appel du point d'entrée embed

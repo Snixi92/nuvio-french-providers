@@ -85,6 +85,17 @@ async function getStreams(tmdbId, mediaType, season, episode, options) {
   var e = parseInt(episode, 10) || 1;
   var streams = [];
 
+  // Correction de correspondance de saison (ex: Lupin TMDB 96677)
+  // Sur TMDB / CDN, la Partie 4 sortie aujourd'hui est répertoriée en Saison 3 (8 épisodes)
+  // car TMDB a regroupé les Parties 1 & 2 dans la Saison 1.
+  var querySeason = s;
+  var queryEpisode = e;
+  if (id === '96677') {
+    if (s === 4) { querySeason = 3; }
+    else if (s === 3) { querySeason = 2; }
+    else if (s === 2) { querySeason = 1; queryEpisode = e + 5; }
+  }
+
   if (!id) return [];
 
   var sessionId = (typeof crypto !== 'undefined' && crypto.randomUUID)
@@ -96,7 +107,7 @@ async function getStreams(tmdbId, mediaType, season, episode, options) {
     try {
       var endpoint = isMovie
         ? base + '/api/movies/' + id + '/video-url'
-        : base + '/api/series/' + id + '/season/' + s + '/episode/' + e + '/video-url';
+        : base + '/api/series/' + id + '/season/' + querySeason + '/episode/' + queryEpisode + '/video-url';
 
       var res = await fetchWithTimeout(endpoint, {
         headers: {
