@@ -112,15 +112,34 @@ function withTimeout(promise, ms, name) {
 }
 
 // ── Stream Sort + Dedup ─────────────────────────────────────────────────────────
-const LANG_SCORE = { VF: 0, FRENCH: 0, FR: 0, MULTI: 1, MULTi: 1, VOSTFR: 2, VOSTA: 2, VOSTA$: 2, VO: 3, ENG: 4, EN: 4 };
+const LANG_SCORE = { VF: 0, FRENCH: 0, FR: 0, VFF: 0, MULTI: 1, MULTi: 1, VOSTFR: 2, VOSTA: 2, VO: 3, ENG: 4, EN: 4 };
 const QUAL_SCORE = { '4K': 0, '2160P': 0, '1080P': 1, 'FHD': 1, '720P': 2, 'HD': 3, '480P': 4, '360P': 5, 'SD': 5 };
 
 function streamScore(s) {
   const text = ((s.title || '') + ' ' + (s.name || '')).toUpperCase();
+  const url = (s.url || '').toLowerCase();
   let lang = 9, qual = 9;
   for (const [k, v] of Object.entries(LANG_SCORE)) { if (text.includes(k)) { lang = Math.min(lang, v); } }
   for (const [k, v] of Object.entries(QUAL_SCORE)) { if (text.includes(k)) { qual = Math.min(qual, v); } }
-  return lang * 10 + qual;
+
+  // Priorité absolue aux flux CDN MP4 direct haute vitesse (PopFlix, StreamFlix) :
+  // Démarrage instantané (<300ms), 15-20 MB/s, aucun freeze de bufferisation
+  let speedBonus = 5;
+  if (text.includes('POPFLIX') || url.includes('falzey') || url.includes('popflix')) {
+    speedBonus = 0; // Top #1
+  } else if (text.includes('STREAMFLIX') || url.includes('vida-loka') || url.includes('stream-flix')) {
+    speedBonus = 1; // Top #2
+  } else if (text.includes('SOUTHTV') || url.includes('southtv')) {
+    speedBonus = 2;
+  } else if (text.includes('FSVID') || text.includes('VOE') || url.includes('fsvid') || url.includes('cloudwindow')) {
+    speedBonus = 3;
+  } else if (url.includes('.mp4') || s.type === 'mp4') {
+    speedBonus = 3;
+  } else if (text.includes('PAPADUSTREAM') || url.includes('papadustream')) {
+    speedBonus = 6; // HLS tokens fragiles : fallback après les flux CDN rapides
+  }
+
+  return lang * 1000 + qual * 100 + speedBonus;
 }
 
 function sortAndDeduplicateStreams(streams) {
@@ -167,11 +186,10 @@ function enrichStream(s) {
     else if (text.includes(' VO') || text.includes('ENG')) enriched.title = '🇬🇧 ' + s.title;
   }
 
-  // Injecter systématiquement behaviorHints pour Stremio (sinon Referer / User-Agent ne sont pas transmis par ExoPlayer / VLC)
+  // Injecter proxyHeaders si headers requis (sans forcer notWebReady qui bloque la lecture directe)
   if (s.headers && Object.keys(s.headers).length > 0) {
     enriched.behaviorHints = {
       ...(enriched.behaviorHints || {}),
-      notWebReady: true,
       proxyHeaders: {
         request: {
           ...((enriched.behaviorHints?.proxyHeaders?.request) || {}),
@@ -271,7 +289,7 @@ async function filterDeadStreams(streams) {
   const validMp4 = checks.filter(r => r.status === 'fulfilled' && r.value).map(r => r.value);
   const removed = mp4.length - validMp4.length;
   if (removed > 0) console.log(`[LinkCheck] ${removed} lien(s) mort(s) filtré(s)`);
-  return [...hls, ...validMp4];
+  return [...validMp4, ...hls];
 }
 
 // ── Routes Stremio ────────────────────────────────────────────────────────────────

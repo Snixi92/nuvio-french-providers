@@ -136,7 +136,6 @@ async function getStreams(tmdbId, mediaType, season, episode, options) {
             'Referer': base + '/'
           },
           behaviorHints: {
-            notWebReady: true,
             proxyHeaders: {
               request: {
                 'User-Agent': UA,
